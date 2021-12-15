@@ -1,13 +1,13 @@
 {
-  "name": "piscina",
-  "version": "3.2.0",
-  "description": "A fast, efficient Node.js Worker Thread Pool implementation",
-  "main": "./dist/src/index.js",
-  "exports": {
-    "import": "./dist/esm-wrapper.mjs",
-    "require": "./dist/src/index.js"
-  },
-  "types": "./dist/src/index.d.ts",
+  "name": "tinypool",
+  "version": "0.0.0",
+  "description": "A minimal and tiny Node.js Worker Thread Pool implementation, a fork of piscina, but with fewer features",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
   "scripts": {
     "build": "tsc && gen-esm-wrapper . dist/esm-wrapper.mjs",
     "lint": "standardx \"**/*.{ts,mjs,js,cjs}\" | snazzy",
@@ -17,18 +17,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/piscinajs/piscina.git"
+    "url": "git+https://github.com/aslemammad/tinypool.git"
   },
   "keywords": [
     "fast",
     "worker threads",
-    "thread pool",
-    "wade wilson"
-  ],
-  "author": "James M Snell <jasnell@gmail.com>",
-  "contributors": [
-    "Anna Henningsen <anna@addaleax.net>",
-    "Matteo Collina <matteo.collina@gmail.com>"
+    "thread pool"
   ],
   "license": "MIT",
   "devDependencies": {
@@ -42,7 +36,8 @@
     "standardx": "^7.0.0",
     "tap": "^15.0.6",
     "ts-node": "^9.1.1",
-    "typescript": "4.3.x"
+    "typescript": "4.3.x",
+    "clean-publish": "^3.4.4"
   },
   "dependencies": {
     "eventemitter-asyncresource": "^1.0.0",
@@ -52,37 +47,12 @@
   "optionalDependencies": {
     "nice-napi": "^1.0.2"
   },
-  "eslintConfig": {
-    "rules": {
-      "semi": [
-        "error",
-        "always"
-      ],
-      "no-unused-vars": "off",
-      "no-use-before-define": "off",
-      "no-unreachable-loop": "off",
-      "no-dupe-class-members": "off",
-      "@typescript-eslint/no-unused-vars": "error"
-    },
-    "globals": {
-      "SharedArrayBuffer": true,
-      "Atomics": true,
-      "AbortController": true,
-      "MessageChannel": true
-    }
-  },
-  "standardx": {
-    "parser": "@typescript-eslint/parser",
-    "plugins": [
-      "@typescript-eslint/eslint-plugin"
-    ]
-  },
   "bugs": {
-    "url": "https://github.com/piscinajs/piscina/issues"
+    "url": "https://github.com/aslemammad/tinypool/issues"
   },
-  "homepage": "https://github.com/piscinajs/piscina#readme",
-  "directories": {
-    "example": "examples",
-    "test": "test"
+  "homepage": "https://github.com/aslemammad/tinypool#readme",
+  "engines": {
+    "node": ">=14.0.0"
   }
+ 
 }
