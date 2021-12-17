@@ -10,11 +10,10 @@
     "dist/**"
   ],
   "scripts": {
-    "test:ci": "tsc --noEmit && jest",
+    "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:dev": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --no-coverage",
     "dev": "tsup --watch",
     "build": "tsup --minify",
-    "lint": "standardx \"**/*.{ts,mjs,js,cjs}\" | snazzy",
     "publish": "clean-publish"
   },
   "repository": {
@@ -48,12 +47,7 @@
     "typescript": "4.3.x",
     "vite": "^2.7.3",
     "vitest": "^0.0.92",
-    "eventemitter-asyncresource": "^1.0.0",
-    "hdr-histogram-js": "^2.0.1",
-    "hdr-histogram-percentiles-obj": "^3.0.0"
-  },
-  "optionalDependencies": {
-    "nice-napi": "^1.0.2"
+    "eventemitter-asyncresource": "^1.0.0"
   },
   "bugs": {
     "url": "https://github.com/aslemammad/tinypool/issues"
@@ -65,7 +59,8 @@
   "jest": {
     "rootDir": ".",
     "moduleNameMapper": {
-      "^tinypool$": "<rootDir>/dist/esm/index.js"
+      "^tinypool$": "<rootDir>/dist/esm/index.js",
+      "^tinypool/common$": "<rootDir>/dist/esm/common.js"
     },
     "modulePathIgnorePatterns": [
       "dist"

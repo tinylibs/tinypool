@@ -18,6 +18,6 @@
       "tinypool": ["./dist/index.d.ts"]
     }
   },
-  "include": ["src", "test"],
+  "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]
 }
