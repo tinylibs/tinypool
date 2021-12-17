@@ -1,10 +1,9 @@
+
 # Tinypool - the node.js worker pool 🧵
 
 > Piscina: A fast, efficient Node.js Worker Thread Pool implementation
 
-Tinypool is no more than a fork of piscina, what we try to acheive in this library, is to eliminate some dependencies and extra features of piscina that we're less likely to use them in our projects. 
-That's why Tinypool's install size (24KB) is so smaller than Piscina's install size (6MB).
-Therefore, if you need features like [utilization](https://github.com/piscinajs/piscina#property-utilization-readonly) or [NAPI](https://github.com/piscinajs/piscina#thread-priority-on-linux-systems), [Piscina](https://github.com/piscinajs/piscina) is a better choice for you.
+Tinypool is a fork of piscina. What we try to achieve in this library, is to eliminate some dependencies and features that our target users don't need (currently, our main user will be Vitest). Tinypool's install size (24KB) can then be smaller than Piscina's install size (6MB). If you need features like [utilization](https://github.com/piscinajs/piscina#property-utilization-readonly) or [NAPI](https://github.com/piscinajs/piscina#thread-priority-on-linux-systems), [Piscina](https://github.com/piscinajs/piscina) is a better choice for you. We think that Piscina is an amazing library, and we may try to upstream some of the dependencies optimization in this fork.
 
 * ✅ Smaller install size, 24KB 
 * ✅ Minimal
@@ -48,3 +47,5 @@ We have a similar API to Piscina, so for more information, you can read Piscina'
 ## Credits
 
 [The Vitest team](https://vitest.dev/) for giving me the chance of creating and maintaing this project for vitest.
+
+[Piscina](https://github.com/piscinajs/piscina), because Tinypool is not more than a friendly fork of piscina.
