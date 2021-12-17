@@ -1,7 +1,6 @@
 import { parentPort, MessagePort, receiveMessageOnPort, workerData } from 'worker_threads';
 import { pathToFileURL } from 'url';
 import {
-  commonState,
   ReadyMessage,
   RequestMessage,
   ResponseMessage,
@@ -13,8 +12,10 @@ import {
   kValue
 } from './common';
 
-commonState.isWorkerThread = true;
-commonState.workerData = workerData;
+process.__tinypool_state__ = {
+  isWorkerThread: true,
+  workerData: workerData,
+}
 
 const handlerCache : Map<string, Function> = new Map();
 let useAtomics : boolean = process.env.PISCINA_DISABLE_ATOMICS !== '1';
@@ -76,16 +77,8 @@ async function getHandler (filename : string, name : string) : Promise<Function 
 // (so we can pre-load and cache the handler).
 parentPort!.on('message', (message : StartupMessage) => {
   useAtomics = process.env.PISCINA_DISABLE_ATOMICS === '1' ? false : message.useAtomics;
-  const { port, sharedBuffer, filename, name, niceIncrement } = message;
+  const { port, sharedBuffer, filename, name } = message;
   (async function () {
-    try {
-      if (niceIncrement !== 0 && process.platform === 'linux') {
-        // ts-ignore because the dependency is not installed on Windows.
-        // @ts-ignore
-        (await import('nice-napi')).default(niceIncrement);
-      }
-    } catch {}
-
     if (filename !== null) {
       await getHandler(filename, name);
     }
