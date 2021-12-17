@@ -1,4 +1,4 @@
-# Tinypool - the minimal node.js worker pool 🧵
+# Tinypool - the node.js worker pool 🧵
 
 > Piscina: A fast, efficient Node.js Worker Thread Pool implementation
 
