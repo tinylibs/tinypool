@@ -9,18 +9,16 @@ import EventEmitterAsyncResource from "./EventEmitterAsyncResource";
 import { AsyncResource } from "async_hooks";
 import { cpus } from "os";
 import { fileURLToPath, URL } from "url";
-import { dirname, resolve } from "path";
+import { dirname, join, resolve } from "path";
 import { inspect, types } from "util";
 import assert from "assert";
-import { Histogram, build } from "hdr-histogram-js";
 import { performance } from "perf_hooks";
-import hdrobj from "hdr-histogram-percentiles-obj";
+import { readFileSync } from "fs";
 import {
   ReadyMessage,
   RequestMessage,
   ResponseMessage,
   StartupMessage,
-  commonState,
   kResponseCountField,
   kRequestCountField,
   kFieldCount,
@@ -28,16 +26,25 @@ import {
   Task,
   TaskQueue,
   kQueueOptions,
-  isTaskQueue,
   isTransferable,
   markMovable,
   isMovable,
   kTransferable,
   kValue,
 } from "./common";
-import { version } from "../package.json";
 
-const cpuCount: number = cpus().length
+declare global {
+  namespace NodeJS {
+    interface Process {
+      __tinypool_state__: {
+        isWorkerThread: boolean;
+        workerData: any;
+      };
+    }
+  }
+}
+
+const cpuCount: number = cpus().length;
 
 interface AbortSignalEventTargetAddOptions {
   once: boolean;
@@ -122,7 +129,6 @@ interface Options {
   env?: EnvSpecifier;
   workerData?: any;
   taskQueue?: TaskQueue;
-  niceIncrement?: number;
   trackUnmanagedFds?: boolean;
 }
 
@@ -136,7 +142,6 @@ interface FilledOptions extends Options {
   concurrentTasksPerWorker: number;
   useAtomics: boolean;
   taskQueue: TaskQueue;
-  niceIncrement: number;
 }
 
 const kDefaultOptions: FilledOptions = {
@@ -149,7 +154,6 @@ const kDefaultOptions: FilledOptions = {
   concurrentTasksPerWorker: 1,
   useAtomics: true,
   taskQueue: new ArrayTaskQueue(),
-  niceIncrement: 0,
   trackUnmanagedFds: true,
 };
 
@@ -247,13 +251,13 @@ class TaskInfo extends AsyncResource implements Task {
     abortSignal: AbortSignalAny | null,
     triggerAsyncId: number
   ) {
-    super("Piscina.Task", { requireManualDestroy: true, triggerAsyncId });
+    super("Tinypool.Task", { requireManualDestroy: true, triggerAsyncId });
     this.callback = callback;
     this.task = task;
     this.transferList = transferList;
 
     // If the task is a Transferable returned by
-    // Piscina.move(), then add it to the transferList
+    // Tinypool.move(), then add it to the transferList
     // automatically
     if (isMovable(task)) {
       // This condition should never be hit but typescript
@@ -539,8 +543,6 @@ class ThreadPool {
   taskQueue: TaskQueue;
   skipQueue: TaskInfo[] = [];
   completed: number = 0;
-  runTime: Histogram;
-  waitTime: Histogram;
   start: number = performance.now();
   inProcessPendingMessages: boolean = false;
   startingUp: boolean = false;
@@ -549,8 +551,6 @@ class ThreadPool {
   constructor(publicInterface: Tinypool, options: Options) {
     this.publicInterface = publicInterface;
     this.taskQueue = options.taskQueue || new ArrayTaskQueue();
-    this.runTime = build({ lowestDiscernibleValue: 1 });
-    this.waitTime = build({ lowestDiscernibleValue: 1 });
 
     const filename = options.filename
       ? maybeFileURLToPath(options.filename)
@@ -595,7 +595,7 @@ class ThreadPool {
     const pool = this;
 
     const __dirname = dirname(fileURLToPath(import.meta.url));
-    const worker = new Worker(resolve(__dirname, './worker.js'), {
+    const worker = new Worker(resolve(__dirname, "./worker.js"), {
       env: this.options.env,
       argv: this.options.argv,
       execArgv: this.options.execArgv,
@@ -618,7 +618,6 @@ class ThreadPool {
       port: port2,
       sharedBuffer: workerInfo.sharedBuffer,
       useAtomics: this.options.useAtomics,
-      niceIncrement: this.options.niceIncrement,
     };
     worker.postMessage(message, [port2]);
 
@@ -742,7 +741,6 @@ class ThreadPool {
         break;
       }
       const now = performance.now();
-      this.waitTime.recordValue(now - taskInfo.created);
       taskInfo.started = now;
       workerInfo.postTask(taskInfo);
       this._maybeDrain();
@@ -790,9 +788,6 @@ class ThreadPool {
       name,
       (err: Error | null, result: any) => {
         this.completed++;
-        if (taskInfo.started) {
-          this.runTime.recordValue(performance.now() - taskInfo.started);
-        }
         if (err !== null) {
           reject(err);
         } else {
@@ -878,9 +873,7 @@ class ThreadPool {
       return ret;
     }
 
-    // TODO(addaleax): Clean up the waitTime/runTime recording.
     const now = performance.now();
-    this.waitTime.recordValue(now - taskInfo.created);
     taskInfo.started = now;
     workerInfo.postTask(taskInfo);
     this._maybeDrain();
@@ -926,7 +919,7 @@ class Tinypool extends EventEmitterAsyncResource {
   #pool: ThreadPool;
 
   constructor(options: Options = {}) {
-    super({ ...options, name: "Piscina" });
+    super({ ...options, name: "Tinypool" });
 
     if (
       options.minThreads !== undefined &&
@@ -936,30 +929,6 @@ class Tinypool extends EventEmitterAsyncResource {
       throw new RangeError(
         "options.minThreads and options.maxThreads must not conflict"
       );
-    }
-    if (
-      options.resourceLimits !== undefined &&
-      (typeof options.resourceLimits !== "object" ||
-        options.resourceLimits === null)
-    ) {
-      throw new TypeError("options.resourceLimits must be an object");
-    }
-    if (options.taskQueue !== undefined && !isTaskQueue(options.taskQueue)) {
-      throw new TypeError("options.taskQueue must be a TaskQueue object");
-    }
-    if (
-      options.niceIncrement !== undefined &&
-      (typeof options.niceIncrement !== "number" || options.niceIncrement < 0)
-    ) {
-      throw new TypeError(
-        "options.niceIncrement must be a non-negative integer"
-      );
-    }
-    if (
-      options.trackUnmanagedFds !== undefined &&
-      typeof options.trackUnmanagedFds !== "boolean"
-    ) {
-      throw new TypeError("options.trackUnmanagedFds must be a boolean value");
     }
 
     this.#pool = new ThreadPool(this, options);
@@ -996,56 +965,23 @@ class Tinypool extends EventEmitterAsyncResource {
     return this.#pool.completed;
   }
 
-  get waitTime(): any {
-    const result = hdrobj.histAsObj(this.#pool.waitTime);
-    return hdrobj.addPercentiles(this.#pool.waitTime, result);
-  }
-
-  get runTime(): any {
-    const result = hdrobj.histAsObj(this.#pool.runTime);
-    return hdrobj.addPercentiles(this.#pool.runTime, result);
-  }
-
-  get utilization(): number {
-    // The capacity is the max compute time capacity of the
-    // pool to this point in time as determined by the length
-    // of time the pool has been running multiplied by the
-    // maximum number of threads.
-    const capacity = this.duration * this.#pool.options.maxThreads;
-    const totalMeanRuntime =
-      this.#pool.runTime.mean * this.#pool.runTime.totalCount;
-
-    // We calculate the appoximate pool utilization by multiplying
-    // the mean run time of all tasks by the number of runtime
-    // samples taken and dividing that by the capacity. The
-    // theory here is that capacity represents the absolute upper
-    // limit of compute time this pool could ever attain (but
-    // never will for a variety of reasons. Multiplying the
-    // mean run time by the number of tasks sampled yields an
-    // approximation of the realized compute time. The utilization
-    // then becomes a point-in-time measure of how active the
-    // pool is.
-    return totalMeanRuntime / capacity;
-  }
-
   get duration(): number {
     return performance.now() - this.#pool.start;
   }
 
   static get isWorkerThread(): boolean {
-    return commonState.isWorkerThread;
+    return process.__tinypool_state__?.isWorkerThread || false;
   }
 
   static get workerData(): any {
-    return commonState.workerData;
+    return process.__tinypool_state__?.workerData || undefined;
   }
 
   static get version(): string {
+    const { version } = JSON.parse(
+      readFileSync(join(__dirname, "../package.json"), "utf-8")
+    ) as typeof import("../package.json");
     return version;
-  }
-
-  static get Piscina() {
-    return Tinypool;
   }
 
   static move(
@@ -1082,4 +1018,6 @@ class Tinypool extends EventEmitterAsyncResource {
   }
 }
 
+export * from './common'
+export { Tinypool };
 export default Tinypool;
