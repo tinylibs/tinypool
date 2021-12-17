@@ -1,15 +1,20 @@
-import { Worker, MessageChannel, MessagePort, receiveMessageOnPort } from 'worker_threads';
-import { once } from 'events';
-import EventEmitterAsyncResource from 'eventemitter-asyncresource';
-import { AsyncResource } from 'async_hooks';
-import { cpus } from 'os';
-import { fileURLToPath, URL } from 'url';
-import { resolve } from 'path';
-import { inspect, types } from 'util';
-import assert from 'assert';
-import { Histogram, build } from 'hdr-histogram-js';
-import { performance } from 'perf_hooks';
-import hdrobj from 'hdr-histogram-percentiles-obj';
+import {
+  Worker,
+  MessageChannel,
+  MessagePort,
+  receiveMessageOnPort,
+} from "worker_threads";
+import { once } from "events";
+import EventEmitterAsyncResource from "./EventEmitterAsyncResource";
+import { AsyncResource } from "async_hooks";
+import { cpus } from "os";
+import { fileURLToPath, URL } from "url";
+import { dirname, resolve } from "path";
+import { inspect, types } from "util";
+import assert from "assert";
+import { Histogram, build } from "hdr-histogram-js";
+import { performance } from "perf_hooks";
+import hdrobj from "hdr-histogram-percentiles-obj";
 import {
   ReadyMessage,
   RequestMessage,
@@ -28,74 +33,74 @@ import {
   markMovable,
   isMovable,
   kTransferable,
-  kValue
-} from './common';
-import { version } from '../package.json';
+  kValue,
+} from "./common";
+import { version } from "../package.json";
 
-const cpuCount : number = (() => {
-  try {
-    return cpus().length;
-  } catch {
-    /* istanbul ignore next */
-    return 1;
-  }
-})();
+const cpuCount: number = cpus().length
 
 interface AbortSignalEventTargetAddOptions {
-  once : boolean;
-};
+  once: boolean;
+}
 
 interface AbortSignalEventTarget {
-  addEventListener : (
-    name : 'abort',
-    listener : () => void,
-    options? : AbortSignalEventTargetAddOptions) => void;
-  removeEventListener : (
-    name : 'abort',
-    listener : () => void) => void;
-  aborted? : boolean;
+  addEventListener: (
+    name: "abort",
+    listener: () => void,
+    options?: AbortSignalEventTargetAddOptions
+  ) => void;
+  removeEventListener: (name: "abort", listener: () => void) => void;
+  aborted?: boolean;
 }
 interface AbortSignalEventEmitter {
-  off : (name : 'abort', listener : () => void) => void;
-  once : (name : 'abort', listener : () => void) => void;
+  off: (name: "abort", listener: () => void) => void;
+  once: (name: "abort", listener: () => void) => void;
 }
 type AbortSignalAny = AbortSignalEventTarget | AbortSignalEventEmitter;
-function onabort (abortSignal : AbortSignalAny, listener : () => void) {
-  if ('addEventListener' in abortSignal) {
-    abortSignal.addEventListener('abort', listener, { once: true });
+function onabort(abortSignal: AbortSignalAny, listener: () => void) {
+  if ("addEventListener" in abortSignal) {
+    abortSignal.addEventListener("abort", listener, { once: true });
   } else {
-    abortSignal.once('abort', listener);
+    abortSignal.once("abort", listener);
   }
 }
 class AbortError extends Error {
-  constructor () {
-    super('The task has been aborted');
+  constructor() {
+    super("The task has been aborted");
   }
 
-  get name () { return 'AbortError'; }
+  get name() {
+    return "AbortError";
+  }
 }
 
 type ResourceLimits = Worker extends {
-  resourceLimits? : infer T;
-} ? T : {};
+  resourceLimits?: infer T;
+}
+  ? T
+  : {};
 type EnvSpecifier = typeof Worker extends {
-  new (filename : never, options?: { env: infer T }) : Worker;
-} ? T : never;
+  new (filename: never, options?: { env: infer T }): Worker;
+}
+  ? T
+  : never;
 
 class ArrayTaskQueue implements TaskQueue {
-  tasks : Task[] = [];
+  tasks: Task[] = [];
 
-  get size () { return this.tasks.length; }
+  get size() {
+    return this.tasks.length;
+  }
 
-  shift () : Task | null {
+  shift(): Task | null {
     return this.tasks.shift() as Task;
   }
 
-  push (task : Task) : void {
+  push(task: Task): void {
     this.tasks.push(task);
   }
 
-  remove (task : Task) : void {
+  remove(task: Task): void {
     const index = this.tasks.indexOf(task);
     assert.notStrictEqual(index, -1);
     this.tasks.splice(index, 1);
@@ -103,40 +108,40 @@ class ArrayTaskQueue implements TaskQueue {
 }
 
 interface Options {
-  filename? : string | null,
-  name?: string,
-  minThreads? : number,
-  maxThreads? : number,
-  idleTimeout? : number,
-  maxQueue? : number | 'auto',
-  concurrentTasksPerWorker? : number,
-  useAtomics? : boolean,
-  resourceLimits? : ResourceLimits,
-  argv? : string[],
-  execArgv? : string[],
-  env? : EnvSpecifier,
-  workerData? : any,
-  taskQueue? : TaskQueue,
-  niceIncrement? : number,
-  trackUnmanagedFds? : boolean,
+  filename?: string | null;
+  name?: string;
+  minThreads?: number;
+  maxThreads?: number;
+  idleTimeout?: number;
+  maxQueue?: number | "auto";
+  concurrentTasksPerWorker?: number;
+  useAtomics?: boolean;
+  resourceLimits?: ResourceLimits;
+  argv?: string[];
+  execArgv?: string[];
+  env?: EnvSpecifier;
+  workerData?: any;
+  taskQueue?: TaskQueue;
+  niceIncrement?: number;
+  trackUnmanagedFds?: boolean;
 }
 
 interface FilledOptions extends Options {
-  filename : string | null,
-  name: string,
-  minThreads : number,
-  maxThreads : number,
-  idleTimeout : number,
-  maxQueue : number,
-  concurrentTasksPerWorker : number,
-  useAtomics: boolean,
-  taskQueue : TaskQueue,
-  niceIncrement : number
+  filename: string | null;
+  name: string;
+  minThreads: number;
+  maxThreads: number;
+  idleTimeout: number;
+  maxQueue: number;
+  concurrentTasksPerWorker: number;
+  useAtomics: boolean;
+  taskQueue: TaskQueue;
+  niceIncrement: number;
 }
 
-const kDefaultOptions : FilledOptions = {
+const kDefaultOptions: FilledOptions = {
   filename: null,
-  name: 'default',
+  name: "default",
   minThreads: Math.max(cpuCount / 2, 1),
   maxThreads: cpuCount * 1.5,
   idleTimeout: 0,
@@ -145,63 +150,75 @@ const kDefaultOptions : FilledOptions = {
   useAtomics: true,
   taskQueue: new ArrayTaskQueue(),
   niceIncrement: 0,
-  trackUnmanagedFds: true
+  trackUnmanagedFds: true,
 };
 
 interface RunOptions {
-  transferList? : TransferList,
-  filename? : string | null,
-  signal? : AbortSignalAny | null,
-  name? : string | null
+  transferList?: TransferList;
+  filename?: string | null;
+  signal?: AbortSignalAny | null;
+  name?: string | null;
 }
 
 interface FilledRunOptions extends RunOptions {
-  transferList : TransferList | never,
-  filename : string | null,
-  signal : AbortSignalAny | null,
-  name : string | null
+  transferList: TransferList | never;
+  filename: string | null;
+  signal: AbortSignalAny | null;
+  name: string | null;
 }
 
-const kDefaultRunOptions : FilledRunOptions = {
+const kDefaultRunOptions: FilledRunOptions = {
   transferList: undefined,
   filename: null,
   signal: null,
-  name: null
+  name: null,
 };
 
 class DirectlyTransferable implements Transferable {
-  #value : object;
-  constructor (value : object) {
+  #value: object;
+  constructor(value: object) {
     this.#value = value;
   }
 
-  get [kTransferable] () : object { return this.#value; }
+  get [kTransferable](): object {
+    return this.#value;
+  }
 
-  get [kValue] () : object { return this.#value; }
+  get [kValue](): object {
+    return this.#value;
+  }
 }
 
 class ArrayBufferViewTransferable implements Transferable {
-  #view : ArrayBufferView;
-  constructor (view : ArrayBufferView) {
+  #view: ArrayBufferView;
+  constructor(view: ArrayBufferView) {
     this.#view = view;
   }
 
-  get [kTransferable] () : object { return this.#view.buffer; }
+  get [kTransferable](): object {
+    return this.#view.buffer;
+  }
 
-  get [kValue] () : object { return this.#view; }
+  get [kValue](): object {
+    return this.#view;
+  }
 }
 
 let taskIdCounter = 0;
 
-type TaskCallback = (err : Error, result: any) => void;
+type TaskCallback = (err: Error, result: any) => void;
 // Grab the type of `transferList` off `MessagePort`. At the time of writing,
 // only ArrayBuffer and MessagePort are valid, but let's avoid having to update
 // our types here every time Node.js adds support for more objects.
-type TransferList = MessagePort extends { postMessage(value : any, transferList : infer T) : any; } ? T : never;
+type TransferList = MessagePort extends {
+  postMessage(value: any, transferList: infer T): any;
+}
+  ? T
+  : never;
 type TransferListItem = TransferList extends (infer T)[] ? T : never;
 
-function maybeFileURLToPath (filename : string) : string {
-  return filename.startsWith('file:')
+function maybeFileURLToPath(filename: string): string {
+  return filename.startsWith("file:")
     ? fileURLToPath(new URL(filename))
     : filename;
 }
@@ -209,27 +226,28 @@ function maybeFileURLToPath (filename : string) : string {
 // Extend AsyncResource so that async relations between posting a task and
 // receiving its result are visible to diagnostic tools.
 class TaskInfo extends AsyncResource implements Task {
-  callback : TaskCallback;
-  task : any;
-  transferList : TransferList;
-  filename : string;
-  name : string;
-  taskId : number;
-  abortSignal : AbortSignalAny | null;
-  abortListener : (() => void) | null = null;
-  workerInfo : WorkerInfo | null = null;
-  created : number;
-  started : number;
+  callback: TaskCallback;
+  task: any;
+  transferList: TransferList;
+  filename: string;
+  name: string;
+  taskId: number;
+  abortSignal: AbortSignalAny | null;
+  abortListener: (() => void) | null = null;
+  workerInfo: WorkerInfo | null = null;
+  created: number;
+  started: number;
 
-  constructor (
-    task : any,
-    transferList : TransferList,
-    filename : string,
-    name : string,
-    callback : TaskCallback,
-    abortSignal : AbortSignalAny | null,
-    triggerAsyncId : number) {
-    super('Piscina.Task', { requireManualDestroy: true, triggerAsyncId });
+  constructor(
+    task: any,
+    transferList: TransferList,
+    filename: string,
+    name: string,
+    callback: TaskCallback,
+    abortSignal: AbortSignalAny | null,
+    triggerAsyncId: number
+  ) {
+    super("Piscina.Task", { requireManualDestroy: true, triggerAsyncId });
     this.callback = callback;
     this.task = task;
     this.transferList = transferList;
@@ -244,8 +262,7 @@ class TaskInfo extends AsyncResource implements Task {
       if (this.transferList == null) {
         this.transferList = [];
       }
-      this.transferList =
-        this.transferList.concat(task[kTransferable]);
+      this.transferList = this.transferList.concat(task[kTransferable]);
       this.task = task[kValue];
     }
 
@@ -257,36 +274,38 @@ class TaskInfo extends AsyncResource implements Task {
     this.started = 0;
   }
 
-  releaseTask () : any {
+  releaseTask(): any {
     const ret = this.task;
     this.task = null;
     return ret;
   }
 
-  done (err : Error | null, result? : any) : void {
+  done(err: Error | null, result?: any): void {
     this.runInAsyncScope(this.callback, null, err, result);
     this.emitDestroy(); // `TaskInfo`s are used only once.
     // If an abort signal was used, remove the listener from it when
     // done to make sure we do not accidentally leak.
     if (this.abortSignal && this.abortListener) {
-      if ('removeEventListener' in this.abortSignal && this.abortListener) {
-        this.abortSignal.removeEventListener('abort', this.abortListener);
+      if ("removeEventListener" in this.abortSignal && this.abortListener) {
+        this.abortSignal.removeEventListener("abort", this.abortListener);
       } else {
         (this.abortSignal as AbortSignalEventEmitter).off(
-          'abort', this.abortListener);
+          "abort",
+          this.abortListener
+        );
       }
     }
   }
 
-  get [kQueueOptions] () : object | null {
+  get [kQueueOptions](): object | null {
     return kQueueOptions in this.task ? this.task[kQueueOptions] : null;
   }
 }
 
 abstract class AsynchronouslyCreatedResource {
-  onreadyListeners : (() => void)[] | null = [];
+  onreadyListeners: (() => void)[] | null = [];
 
-  markAsReady () : void {
+  markAsReady(): void {
     const listeners = this.onreadyListeners;
     assert(listeners !== null);
     this.onreadyListeners = null;
@@ -295,11 +314,11 @@ abstract class AsynchronouslyCreatedResource {
     }
   }
 
-  isReady () : boolean {
+  isReady(): boolean {
     return this.onreadyListeners === null;
   }
 
-  onReady (fn : () => void) {
+  onReady(fn: () => void) {
     if (this.onreadyListeners === null) {
       fn(); // Zalgo is okay here.
       return;
@@ -307,22 +326,23 @@ abstract class AsynchronouslyCreatedResource {
     this.onreadyListeners.push(fn);
   }
 
-  abstract currentUsage() : number;
+  abstract currentUsage(): number;
 }
 
 class AsynchronouslyCreatedResourcePool<
-  T extends AsynchronouslyCreatedResource> {
+  T extends AsynchronouslyCreatedResource
+> {
   pendingItems = new Set<T>();
   readyItems = new Set<T>();
-  maximumUsage : number;
-  onAvailableListeners : ((item : T) => void)[];
+  maximumUsage: number;
+  onAvailableListeners: ((item: T) => void)[];
 
-  constructor (maximumUsage : number) {
+  constructor(maximumUsage: number) {
     this.maximumUsage = maximumUsage;
     this.onAvailableListeners = [];
   }
 
-  add (item : T) {
+  add(item: T) {
     this.pendingItems.add(item);
     item.onReady(() => {
       /* istanbul ignore else */
@@ -334,12 +354,12 @@ class AsynchronouslyCreatedResourcePool<
     });
   }
 
-  delete (item : T) {
+  delete(item: T) {
     this.pendingItems.delete(item);
     this.readyItems.delete(item);
   }
 
-  findAvailable () : T | null {
+  findAvailable(): T | null {
     let minUsage = this.maximumUsage;
     let candidate = null;
     for (const item of this.readyItems) {
@@ -353,16 +373,16 @@ class AsynchronouslyCreatedResourcePool<
     return candidate;
   }
 
-  * [Symbol.iterator] () {
-    yield * this.pendingItems;
-    yield * this.readyItems;
+  *[Symbol.iterator]() {
+    yield* this.pendingItems;
+    yield* this.readyItems;
   }
 
-  get size () {
+  get size() {
     return this.pendingItems.size + this.readyItems.size;
   }
 
-  maybeAvailable (item : T) {
+  maybeAvailable(item: T) {
     /* istanbul ignore else */
     if (item.currentUsage() < this.maximumUsage) {
       for (const listener of this.onAvailableListeners) {
@@ -371,49 +391,46 @@ class AsynchronouslyCreatedResourcePool<
     }
   }
 
-  onAvailable (fn : (item : T) => void) {
+  onAvailable(fn: (item: T) => void) {
     this.onAvailableListeners.push(fn);
   }
 }
 
-type ResponseCallback = (response : ResponseMessage) => void;
+type ResponseCallback = (response: ResponseMessage) => void;
 
 const Errors = {
-  ThreadTermination:
-    () => new Error('Terminating worker thread'),
-  FilenameNotProvided:
-    () => new Error('filename must be provided to run() or in options object'),
-  TaskQueueAtLimit:
-    () => new Error('Task queue is at limit'),
-  NoTaskQueueAvailable:
-    () => new Error('No task queue available and all Workers are busy')
+  ThreadTermination: () => new Error("Terminating worker thread"),
+  FilenameNotProvided: () =>
+    new Error("filename must be provided to run() or in options object"),
+  TaskQueueAtLimit: () => new Error("Task queue is at limit"),
+  NoTaskQueueAvailable: () =>
+    new Error("No task queue available and all Workers are busy"),
 };
 
 class WorkerInfo extends AsynchronouslyCreatedResource {
-  worker : Worker;
-  taskInfos : Map<number, TaskInfo>;
-  idleTimeout : NodeJS.Timeout | null = null; // eslint-disable-line no-undef
-  port : MessagePort;
-  sharedBuffer : Int32Array;
-  lastSeenResponseCount : number = 0;
-  onMessage : ResponseCallback;
+  worker: Worker;
+  taskInfos: Map<number, TaskInfo>;
+  idleTimeout: NodeJS.Timeout | null = null; // eslint-disable-line no-undef
+  port: MessagePort;
+  sharedBuffer: Int32Array;
+  lastSeenResponseCount: number = 0;
+  onMessage: ResponseCallback;
 
-  constructor (
-    worker : Worker,
-    port : MessagePort,
-    onMessage : ResponseCallback) {
+  constructor(worker: Worker, port: MessagePort, onMessage: ResponseCallback) {
     super();
     this.worker = worker;
     this.port = port;
-    this.port.on('message',
-      (message : ResponseMessage) => this._handleResponse(message));
+    this.port.on("message", (message: ResponseMessage) =>
+      this._handleResponse(message)
+    );
     this.onMessage = onMessage;
     this.taskInfos = new Map();
     this.sharedBuffer = new Int32Array(
-      new SharedArrayBuffer(kFieldCount * Int32Array.BYTES_PER_ELEMENT));
+      new SharedArrayBuffer(kFieldCount * Int32Array.BYTES_PER_ELEMENT)
+    );
   }
 
-  destroy () : void {
+  destroy(): void {
     this.worker.terminate();
     this.port.close();
     this.clearIdleTimeout();
@@ -423,26 +440,26 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     this.taskInfos.clear();
   }
 
-  clearIdleTimeout () : void {
+  clearIdleTimeout(): void {
     if (this.idleTimeout !== null) {
       clearTimeout(this.idleTimeout);
       this.idleTimeout = null;
     }
   }
 
-  ref () : WorkerInfo {
+  ref(): WorkerInfo {
     this.port.ref();
     return this;
   }
 
-  unref () : WorkerInfo {
+  unref(): WorkerInfo {
     // Note: Do not call ref()/unref() on the Worker itself since that may cause
     // a hard crash, see https://github.com/nodejs/node/pull/33394.
     this.port.unref();
     return this;
   }
 
-  _handleResponse (message : ResponseMessage) : void {
+  _handleResponse(message: ResponseMessage): void {
     this.onMessage(message);
 
     if (this.taskInfos.size === 0) {
@@ -452,13 +469,13 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     }
   }
 
-  postTask (taskInfo : TaskInfo) {
+  postTask(taskInfo: TaskInfo) {
     assert(!this.taskInfos.has(taskInfo.taskId));
-    const message : RequestMessage = {
+    const message: RequestMessage = {
       task: taskInfo.releaseTask(),
       taskId: taskInfo.taskId,
       filename: taskInfo.filename,
-      name: taskInfo.name
+      name: taskInfo.name,
     };
 
     try {
@@ -481,14 +498,16 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     Atomics.notify(this.sharedBuffer, kRequestCountField, 1);
   }
 
-  processPendingMessages () {
+  processPendingMessages() {
     // If we *know* that there are more messages than we have received using
     // 'message' events yet, then try to load and handle them synchronously,
     // without the need to wait for more expensive events on the event loop.
     // This would usually break async tracking, but in our case, we already have
     // the extra TaskInfo/AsyncResource layer that rectifies that situation.
-    const actualResponseCount =
-      Atomics.load(this.sharedBuffer, kResponseCountField);
+    const actualResponseCount = Atomics.load(
+      this.sharedBuffer,
+      kResponseCountField
+    );
     if (actualResponseCount !== this.lastSeenResponseCount) {
       this.lastSeenResponseCount = actualResponseCount;
 
@@ -499,81 +518,90 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     }
   }
 
-  isRunningAbortableTask () : boolean {
+  isRunningAbortableTask(): boolean {
     // If there are abortable tasks, we are running one at most per Worker.
     if (this.taskInfos.size !== 1) return false;
+    // @ts-ignore
     const [[, task]] = this.taskInfos;
     return task.abortSignal !== null;
   }
 
-  currentUsage () : number {
+  currentUsage(): number {
     if (this.isRunningAbortableTask()) return Infinity;
     return this.taskInfos.size;
   }
 }
 
 class ThreadPool {
-  publicInterface : Piscina;
-  workers : AsynchronouslyCreatedResourcePool<WorkerInfo>;
-  options : FilledOptions;
-  taskQueue : TaskQueue;
-  skipQueue : TaskInfo[] = [];
-  completed : number = 0;
-  runTime : Histogram;
-  waitTime : Histogram;
-  start : number = performance.now();
-  inProcessPendingMessages : boolean = false;
-  startingUp : boolean = false;
-  workerFailsDuringBootstrap : boolean = false;
+  publicInterface: Tinypool;
+  workers: AsynchronouslyCreatedResourcePool<WorkerInfo>;
+  options: FilledOptions;
+  taskQueue: TaskQueue;
+  skipQueue: TaskInfo[] = [];
+  completed: number = 0;
+  runTime: Histogram;
+  waitTime: Histogram;
+  start: number = performance.now();
+  inProcessPendingMessages: boolean = false;
+  startingUp: boolean = false;
+  workerFailsDuringBootstrap: boolean = false;
 
-  constructor (publicInterface : Piscina, options : Options) {
+  constructor(publicInterface: Tinypool, options: Options) {
     this.publicInterface = publicInterface;
     this.taskQueue = options.taskQueue || new ArrayTaskQueue();
     this.runTime = build({ lowestDiscernibleValue: 1 });
     this.waitTime = build({ lowestDiscernibleValue: 1 });
 
-    const filename =
-      options.filename ? maybeFileURLToPath(options.filename) : null;
+    const filename = options.filename
+      ? maybeFileURLToPath(options.filename)
+      : null;
     this.options = { ...kDefaultOptions, ...options, filename, maxQueue: 0 };
     // The >= and <= could be > and < but this way we get 100 % coverage 🙃
-    if (options.maxThreads !== undefined &&
-        this.options.minThreads >= options.maxThreads) {
+    if (
+      options.maxThreads !== undefined &&
+      this.options.minThreads >= options.maxThreads
+    ) {
       this.options.minThreads = options.maxThreads;
     }
-    if (options.minThreads !== undefined &&
-        this.options.maxThreads <= options.minThreads) {
+    if (
+      options.minThreads !== undefined &&
+      this.options.maxThreads <= options.minThreads
+    ) {
       this.options.maxThreads = options.minThreads;
     }
-    if (options.maxQueue === 'auto') {
+    if (options.maxQueue === "auto") {
       this.options.maxQueue = this.options.maxThreads ** 2;
     } else {
       this.options.maxQueue = options.maxQueue ?? kDefaultOptions.maxQueue;
     }
 
     this.workers = new AsynchronouslyCreatedResourcePool<WorkerInfo>(
-      this.options.concurrentTasksPerWorker);
-    this.workers.onAvailable((w : WorkerInfo) => this._onWorkerAvailable(w));
+      this.options.concurrentTasksPerWorker
+    );
+    this.workers.onAvailable((w: WorkerInfo) => this._onWorkerAvailable(w));
 
     this.startingUp = true;
     this._ensureMinimumWorkers();
     this.startingUp = false;
   }
 
-  _ensureMinimumWorkers () : void {
+  _ensureMinimumWorkers(): void {
     while (this.workers.size < this.options.minThreads) {
       this._addNewWorker();
     }
   }
 
-  _addNewWorker () : void {
+  _addNewWorker(): void {
     const pool = this;
-    const worker = new Worker(resolve(__dirname, 'worker.js'), {
+
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const worker = new Worker(resolve(__dirname, './worker.js'), {
       env: this.options.env,
       argv: this.options.argv,
       execArgv: this.options.execArgv,
       resourceLimits: this.options.resourceLimits,
       workerData: this.options.workerData,
-      trackUnmanagedFds: this.options.trackUnmanagedFds
+      trackUnmanagedFds: this.options.trackUnmanagedFds,
     });
 
     const { port1, port2 } = new MessageChannel();
@@ -584,17 +612,17 @@ class ThreadPool {
       workerInfo.markAsReady();
     }
 
-    const message : StartupMessage = {
+    const message: StartupMessage = {
       filename: this.options.filename,
       name: this.options.name,
       port: port2,
       sharedBuffer: workerInfo.sharedBuffer,
       useAtomics: this.options.useAtomics,
-      niceIncrement: this.options.niceIncrement
+      niceIncrement: this.options.niceIncrement,
     };
     worker.postMessage(message, [port2]);
 
-    function onMessage (message : ResponseMessage) {
+    function onMessage(message: ResponseMessage) {
       const { taskId, result } = message;
       // In case of success: Call the callback that was passed to `runTask`,
       // remove the `TaskInfo` associated with the Worker, which marks it as
@@ -607,8 +635,9 @@ class ThreadPool {
       /* istanbul ignore if */
       if (taskInfo === undefined) {
         const err = new Error(
-          `Unexpected message from Worker: ${inspect(message)}`);
-        pool.publicInterface.emit('error', err);
+          `Unexpected message from Worker: ${inspect(message)}`
+        );
+        pool.publicInterface.emit("error", err);
       } else {
         taskInfo.done(message.error, result);
       }
@@ -616,7 +645,7 @@ class ThreadPool {
       pool._processPendingMessages();
     }
 
-    worker.on('message', (message : ReadyMessage) => {
+    worker.on("message", (message: ReadyMessage) => {
       if (message.ready === true) {
         if (workerInfo.currentUsage() === 0) {
           workerInfo.unref();
@@ -628,11 +657,13 @@ class ThreadPool {
         return;
       }
 
-      worker.emit('error', new Error(
-        `Unexpected message on Worker: ${inspect(message)}`));
+      worker.emit(
+        "error",
+        new Error(`Unexpected message on Worker: ${inspect(message)}`)
+      );
     });
 
-    worker.on('error', (err : Error) => {
+    worker.on("error", (err: Error) => {
       // Work around the bug in https://github.com/nodejs/node/pull/33394
       worker.ref = () => {};
 
@@ -658,12 +689,12 @@ class ThreadPool {
           taskInfo.done(err, null);
         }
       } else {
-        this.publicInterface.emit('error', err);
+        this.publicInterface.emit("error", err);
       }
     });
 
     worker.unref();
-    port1.on('close', () => {
+    port1.on("close", () => {
       // The port is only closed if the Worker stops for some reason, but we
       // always .unref() the Worker itself. We want to receive e.g. 'error'
       // events on it, so we ref it once we know it's going to exit anyway.
@@ -673,7 +704,7 @@ class ThreadPool {
     this.workers.add(workerInfo);
   }
 
-  _processPendingMessages () {
+  _processPendingMessages() {
     if (this.inProcessPendingMessages || !this.options.useAtomics) {
       return;
     }
@@ -688,20 +719,22 @@ class ThreadPool {
     }
   }
 
-  _removeWorker (workerInfo : WorkerInfo) : void {
+  _removeWorker(workerInfo: WorkerInfo): void {
     workerInfo.destroy();
 
     this.workers.delete(workerInfo);
   }
 
-  _onWorkerAvailable (workerInfo : WorkerInfo) : void {
-    while ((this.taskQueue.size > 0 || this.skipQueue.length > 0) &&
-      workerInfo.currentUsage() < this.options.concurrentTasksPerWorker) {
+  _onWorkerAvailable(workerInfo: WorkerInfo): void {
+    while (
+      (this.taskQueue.size > 0 || this.skipQueue.length > 0) &&
+      workerInfo.currentUsage() < this.options.concurrentTasksPerWorker
+    ) {
       // The skipQueue will have tasks that we previously shifted off
       // the task queue but had to skip over... we have to make sure
       // we drain that before we drain the taskQueue.
-      const taskInfo = this.skipQueue.shift() ||
-                       this.taskQueue.shift() as TaskInfo;
+      const taskInfo =
+        this.skipQueue.shift() || (this.taskQueue.shift() as TaskInfo);
       // If the task has an abortSignal and the worker has any other
       // tasks, we cannot distribute the task to it. Skip for now.
       if (taskInfo.abortSignal && workerInfo.taskInfos.size > 0) {
@@ -716,8 +749,10 @@ class ThreadPool {
       return;
     }
 
-    if (workerInfo.taskInfos.size === 0 &&
-        this.workers.size > this.options.minThreads) {
+    if (
+      workerInfo.taskInfos.size === 0 &&
+      this.workers.size > this.options.minThreads
+    ) {
       workerInfo.idleTimeout = setTimeout(() => {
         assert.strictEqual(workerInfo.taskInfos.size, 0);
         if (this.workers.size > this.options.minThreads) {
@@ -727,38 +762,33 @@ class ThreadPool {
     }
   }
 
-  runTask (
-    task : any,
-    options : RunOptions) : Promise<any> {
-    let {
-      filename,
-      name
-    } = options;
-    const {
-      transferList = [],
-      signal = null
-    } = options;
+  runTask(task: any, options: RunOptions): Promise<any> {
+    let { filename, name } = options;
+    const { transferList = [], signal = null } = options;
     if (filename == null) {
       filename = this.options.filename;
     }
     if (name == null) {
       name = this.options.name;
     }
-    if (typeof filename !== 'string') {
+    if (typeof filename !== "string") {
       return Promise.reject(Errors.FilenameNotProvided());
     }
     filename = maybeFileURLToPath(filename);
 
-    let resolve : (result : any) => void;
-    let reject : (err : Error) => void;
+    let resolve: (result: any) => void;
+    let reject: (err: Error) => void;
     // eslint-disable-next-line
-    const ret = new Promise((res, rej) => { resolve = res; reject = rej; });
+    const ret = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
     const taskInfo = new TaskInfo(
       task,
       transferList,
       filename,
       name,
-      (err : Error | null, result : any) => {
+      (err: Error | null, result: any) => {
         this.completed++;
         if (taskInfo.started) {
           this.runTime.recordValue(performance.now() - taskInfo.started);
@@ -770,7 +800,8 @@ class ThreadPool {
         }
       },
       signal,
-      this.publicInterface.asyncResource.asyncId());
+      this.publicInterface.asyncResource.asyncId()
+    );
 
     if (signal !== null) {
       // If the AbortSignal has an aborted property and it's truthy,
@@ -817,7 +848,7 @@ class ThreadPool {
     }
 
     // Look for a Worker with a minimum number of tasks it is currently running.
-    let workerInfo : WorkerInfo | null = this.workers.findAvailable();
+    let workerInfo: WorkerInfo | null = this.workers.findAvailable();
 
     // If we want the ability to abort this task, use only workers that have
     // no running tasks.
@@ -828,8 +859,10 @@ class ThreadPool {
     // If no Worker was found, or that Worker was handling another task in some
     // way, and we still have the ability to spawn new threads, do so.
     let waitingForNewWorker = false;
-    if ((workerInfo === null || workerInfo.currentUsage() > 0) &&
-        this.workers.size < this.options.maxThreads) {
+    if (
+      (workerInfo === null || workerInfo.currentUsage() > 0) &&
+      this.workers.size < this.options.maxThreads
+    ) {
       this._addNewWorker();
       waitingForNewWorker = true;
     }
@@ -854,31 +887,34 @@ class ThreadPool {
     return ret;
   }
 
-  pendingCapacity () : number {
-    return this.workers.pendingItems.size *
-      this.options.concurrentTasksPerWorker;
+  pendingCapacity(): number {
+    return (
+      this.workers.pendingItems.size * this.options.concurrentTasksPerWorker
+    );
   }
 
-  _maybeDrain () {
+  _maybeDrain() {
     if (this.taskQueue.size === 0 && this.skipQueue.length === 0) {
-      this.publicInterface.emit('drain');
+      this.publicInterface.emit("drain");
     }
   }
 
-  async destroy () {
+  async destroy() {
     while (this.skipQueue.length > 0) {
-      const taskInfo : TaskInfo = this.skipQueue.shift() as TaskInfo;
-      taskInfo.done(new Error('Terminating worker thread'));
+      const taskInfo: TaskInfo = this.skipQueue.shift() as TaskInfo;
+      taskInfo.done(new Error("Terminating worker thread"));
     }
     while (this.taskQueue.size > 0) {
-      const taskInfo : TaskInfo = this.taskQueue.shift() as TaskInfo;
-      taskInfo.done(new Error('Terminating worker thread'));
+      const taskInfo: TaskInfo = this.taskQueue.shift() as TaskInfo;
+      taskInfo.done(new Error("Terminating worker thread"));
     }
 
-    const exitEvents : Promise<any[]>[] = [];
+    const exitEvents: Promise<any[]>[] = [];
     while (this.workers.size > 0) {
       const [workerInfo] = this.workers;
-      exitEvents.push(once(workerInfo.worker, 'exit'));
+      // @ts-ignore
+      exitEvents.push(once(workerInfo.worker, "exit"));
+      // @ts-ignore
       this._removeWorker(workerInfo);
     }
 
@@ -886,187 +922,98 @@ class ThreadPool {
   }
 }
 
-class Piscina extends EventEmitterAsyncResource {
-  #pool : ThreadPool;
+class Tinypool extends EventEmitterAsyncResource {
+  #pool: ThreadPool;
 
-  constructor (options : Options = {}) {
-    super({ ...options, name: 'Piscina' });
+  constructor(options: Options = {}) {
+    super({ ...options, name: "Piscina" });
 
-    if (typeof options.filename !== 'string' && options.filename != null) {
-      throw new TypeError('options.filename must be a string or null');
+    if (
+      options.minThreads !== undefined &&
+      options.maxThreads !== undefined &&
+      options.minThreads > options.maxThreads
+    ) {
+      throw new RangeError(
+        "options.minThreads and options.maxThreads must not conflict"
+      );
     }
-    if (typeof options.name !== 'string' && options.name != null) {
-      throw new TypeError('options.name must be a string or null');
-    }
-    if (options.minThreads !== undefined &&
-        (typeof options.minThreads !== 'number' || options.minThreads < 0)) {
-      throw new TypeError('options.minThreads must be a non-negative integer');
-    }
-    if (options.maxThreads !== undefined &&
-        (typeof options.maxThreads !== 'number' || options.maxThreads < 1)) {
-      throw new TypeError('options.maxThreads must be a positive integer');
-    }
-    if (options.minThreads !== undefined && options.maxThreads !== undefined &&
-        options.minThreads > options.maxThreads) {
-      throw new RangeError('options.minThreads and options.maxThreads must not conflict');
-    }
-    if (options.idleTimeout !== undefined &&
-        (typeof options.idleTimeout !== 'number' || options.idleTimeout < 0)) {
-      throw new TypeError('options.idleTimeout must be a non-negative integer');
-    }
-    if (options.maxQueue !== undefined &&
-        options.maxQueue !== 'auto' &&
-        (typeof options.maxQueue !== 'number' || options.maxQueue < 0)) {
-      throw new TypeError('options.maxQueue must be a non-negative integer');
-    }
-    if (options.concurrentTasksPerWorker !== undefined &&
-        (typeof options.concurrentTasksPerWorker !== 'number' ||
-         options.concurrentTasksPerWorker < 1)) {
-      throw new TypeError(
-        'options.concurrentTasksPerWorker must be a positive integer');
-    }
-    if (options.useAtomics !== undefined &&
-        typeof options.useAtomics !== 'boolean') {
-      throw new TypeError('options.useAtomics must be a boolean value');
-    }
-    if (options.resourceLimits !== undefined &&
-        (typeof options.resourceLimits !== 'object' ||
-         options.resourceLimits === null)) {
-      throw new TypeError('options.resourceLimits must be an object');
+    if (
+      options.resourceLimits !== undefined &&
+      (typeof options.resourceLimits !== "object" ||
+        options.resourceLimits === null)
+    ) {
+      throw new TypeError("options.resourceLimits must be an object");
     }
     if (options.taskQueue !== undefined && !isTaskQueue(options.taskQueue)) {
-      throw new TypeError('options.taskQueue must be a TaskQueue object');
+      throw new TypeError("options.taskQueue must be a TaskQueue object");
     }
-    if (options.niceIncrement !== undefined &&
-        (typeof options.niceIncrement !== 'number' || options.niceIncrement < 0)) {
-      throw new TypeError('options.niceIncrement must be a non-negative integer');
+    if (
+      options.niceIncrement !== undefined &&
+      (typeof options.niceIncrement !== "number" || options.niceIncrement < 0)
+    ) {
+      throw new TypeError(
+        "options.niceIncrement must be a non-negative integer"
+      );
     }
-    if (options.trackUnmanagedFds !== undefined &&
-        typeof options.trackUnmanagedFds !== 'boolean') {
-      throw new TypeError('options.trackUnmanagedFds must be a boolean value');
+    if (
+      options.trackUnmanagedFds !== undefined &&
+      typeof options.trackUnmanagedFds !== "boolean"
+    ) {
+      throw new TypeError("options.trackUnmanagedFds must be a boolean value");
     }
 
     this.#pool = new ThreadPool(this, options);
   }
 
-  /** @deprecated Use run(task, options) instead **/
-  runTask (task : any, transferList? : TransferList, filename? : string, abortSignal? : AbortSignalAny) : Promise<any>;
+  run(task: any, options: RunOptions = kDefaultRunOptions) {
+    const { transferList, filename, name, signal } = options;
 
-  /** @deprecated Use run(task, options) instead **/
-  runTask (task : any, transferList? : TransferList, filename? : AbortSignalAny, abortSignal? : undefined) : Promise<any>;
-
-  /** @deprecated Use run(task, options) instead **/
-  runTask (task : any, transferList? : string, filename? : AbortSignalAny, abortSignal? : undefined) : Promise<any>;
-
-  /** @deprecated Use run(task, options) instead **/
-  runTask (task : any, transferList? : AbortSignalAny, filename? : undefined, abortSignal? : undefined) : Promise<any>;
-
-  /** @deprecated Use run(task, options) instead **/
-  runTask (task : any, transferList? : any, filename? : any, signal? : any) {
-    // If transferList is a string or AbortSignal, shift it.
-    if ((typeof transferList === 'object' && !Array.isArray(transferList)) ||
-        typeof transferList === 'string') {
-      signal = filename as (AbortSignalAny | undefined);
-      filename = transferList;
-      transferList = undefined;
-    }
-    // If filename is an AbortSignal, shift it.
-    if (typeof filename === 'object' && !Array.isArray(filename)) {
-      signal = filename;
-      filename = undefined;
-    }
-
-    if (transferList !== undefined && !Array.isArray(transferList)) {
-      return Promise.reject(
-        new TypeError('transferList argument must be an Array'));
-    }
-    if (filename !== undefined && typeof filename !== 'string') {
-      return Promise.reject(
-        new TypeError('filename argument must be a string'));
-    }
-    if (signal !== undefined && typeof signal !== 'object') {
-      return Promise.reject(
-        new TypeError('signal argument must be an object'));
-    }
-    return this.#pool.runTask(
-      task, {
-        transferList,
-        filename: filename || null,
-        name: 'default',
-        signal: signal || null
-      });
-  }
-
-  run (task : any, options : RunOptions = kDefaultRunOptions) {
-    if (options === null || typeof options !== 'object') {
-      return Promise.reject(
-        new TypeError('options must be an object'));
-    }
-    const {
-      transferList,
-      filename,
-      name,
-      signal
-    } = options;
-    if (transferList !== undefined && !Array.isArray(transferList)) {
-      return Promise.reject(
-        new TypeError('transferList argument must be an Array'));
-    }
-    if (filename != null && typeof filename !== 'string') {
-      return Promise.reject(
-        new TypeError('filename argument must be a string'));
-    }
-    if (name != null && typeof name !== 'string') {
-      return Promise.reject(new TypeError('name argument must be a string'));
-    }
-    if (signal != null && typeof signal !== 'object') {
-      return Promise.reject(
-        new TypeError('signal argument must be an object'));
-    }
     return this.#pool.runTask(task, { transferList, filename, name, signal });
   }
 
-  destroy () {
+  destroy() {
     return this.#pool.destroy();
   }
 
-  get options () : FilledOptions {
+  get options(): FilledOptions {
     return this.#pool.options;
   }
 
-  get threads () : Worker[] {
-    const ret : Worker[] = [];
-    for (const workerInfo of this.#pool.workers) { ret.push(workerInfo.worker); }
+  get threads(): Worker[] {
+    const ret: Worker[] = [];
+    for (const workerInfo of this.#pool.workers) {
+      ret.push(workerInfo.worker);
+    }
     return ret;
   }
 
-  get queueSize () : number {
+  get queueSize(): number {
     const pool = this.#pool;
     return Math.max(pool.taskQueue.size - pool.pendingCapacity(), 0);
   }
 
-  get completed () : number {
+  get completed(): number {
     return this.#pool.completed;
   }
 
-  get waitTime () : any {
+  get waitTime(): any {
     const result = hdrobj.histAsObj(this.#pool.waitTime);
     return hdrobj.addPercentiles(this.#pool.waitTime, result);
   }
 
-  get runTime () : any {
+  get runTime(): any {
     const result = hdrobj.histAsObj(this.#pool.runTime);
     return hdrobj.addPercentiles(this.#pool.runTime, result);
   }
 
-  get utilization () : number {
+  get utilization(): number {
     // The capacity is the max compute time capacity of the
     // pool to this point in time as determined by the length
     // of time the pool has been running multiplied by the
     // maximum number of threads.
     const capacity = this.duration * this.#pool.options.maxThreads;
-    const totalMeanRuntime = this.#pool.runTime.mean *
-      this.#pool.runTime.totalCount;
+    const totalMeanRuntime =
+      this.#pool.runTime.mean * this.#pool.runTime.totalCount;
 
     // We calculate the appoximate pool utilization by multiplying
     // the mean run time of all tasks by the number of runtime
@@ -1081,28 +1028,35 @@ class Piscina extends EventEmitterAsyncResource {
     return totalMeanRuntime / capacity;
   }
 
-  get duration () : number {
+  get duration(): number {
     return performance.now() - this.#pool.start;
   }
 
-  static get isWorkerThread () : boolean {
+  static get isWorkerThread(): boolean {
     return commonState.isWorkerThread;
   }
 
-  static get workerData () : any {
+  static get workerData(): any {
     return commonState.workerData;
   }
 
-  static get version () : string {
+  static get version(): string {
     return version;
   }
 
-  static get Piscina () {
-    return Piscina;
+  static get Piscina() {
+    return Tinypool;
   }
 
-  static move (val : Transferable | TransferListItem | ArrayBufferView | ArrayBuffer | MessagePort) {
-    if (val != null && typeof val === 'object' && typeof val !== 'function') {
+  static move(
+    val:
+      | Transferable
+      | TransferListItem
+      | ArrayBufferView
+      | ArrayBuffer
+      | MessagePort
+  ) {
+    if (val != null && typeof val === "object" && typeof val !== "function") {
       if (!isTransferable(val)) {
         if ((types as any).isArrayBufferView(val)) {
           val = new ArrayBufferViewTransferable(val as ArrayBufferView);
@@ -1115,11 +1069,17 @@ class Piscina extends EventEmitterAsyncResource {
     return val;
   }
 
-  static get transferableSymbol () { return kTransferable; }
+  static get transferableSymbol() {
+    return kTransferable;
+  }
 
-  static get valueSymbol () { return kValue; }
+  static get valueSymbol() {
+    return kValue;
+  }
 
-  static get queueOptionsSymbol () { return kQueueOptions; }
+  static get queueOptionsSymbol() {
+    return kQueueOptions;
+  }
 }
 
-export = Piscina;
+export default Tinypool;

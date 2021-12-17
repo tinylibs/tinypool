@@ -7,4 +7,4 @@ function b () { return 'b'; }
 a.a = a;
 a.b = b;
 
-module.exports = a;
+export default a;

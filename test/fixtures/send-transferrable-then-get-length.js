@@ -22,7 +22,7 @@ class Shared {
 }
 
 let time;
-module.exports = {
+export default {
   send: async () => {
     const data = new ArrayBuffer(128);
     const shared = new Shared(data);

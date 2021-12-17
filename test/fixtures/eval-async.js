@@ -1,6 +1,6 @@
 'use strict';
 
-const { promisify } = require('util');
+import { promisify } from 'util'
 const sleep = promisify(setTimeout);
 
 // eslint-disable-next-line no-eval
@@ -11,4 +11,4 @@ async function load () {
   return handler;
 }
 
-module.exports = load();
+export default load();

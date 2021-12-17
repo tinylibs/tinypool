@@ -61,6 +61,7 @@ async function getHandler (filename : string, name : string) : Promise<Function 
   // Limit the handler cache size. This should not usually be an issue and is
   // only provided for pathological cases.
   if (handlerCache.size > 1000) {
+    // @ts-ignore
     const [[key]] = handlerCache;
     handlerCache.delete(key);
   }
