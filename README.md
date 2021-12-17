@@ -24,12 +24,12 @@ In `main.js`:
 import path from 'path'
 import Tinypool from 'tinypool'
 
-const piscina = new Piscina({
+const pool = new Tinypool({
   filename: new URL('./worker.js', import.meta.url).href
 });
 
 (async function() {
-  const result = await piscina.run({ a: 4, b: 6 });
+  const result = await pool.run({ a: 4, b: 6 });
   console.log(result);  // Prints 10
 })();
 ```
