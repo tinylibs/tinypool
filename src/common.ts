@@ -6,7 +6,6 @@ export interface StartupMessage {
   port : MessagePort;
   sharedBuffer : Int32Array;
   useAtomics : boolean;
-  niceIncrement : number;
 }
 
 export interface RequestMessage {
@@ -26,17 +25,12 @@ export interface ResponseMessage {
   error: Error | null;
 }
 
-export const commonState = {
-  isWorkerThread: false,
-  workerData: undefined
-};
-
 // Internal symbol used to mark Transferable objects returned
-// by the Piscina.move() function
-const kMovable = Symbol('Piscina.kMovable');
-export const kTransferable = Symbol.for('Piscina.transferable');
-export const kValue = Symbol.for('Piscina.valueOf');
-export const kQueueOptions = Symbol.for('Piscina.queueOptions');
+// by the Tinypool.move() function
+const kMovable = Symbol('Tinypool.kMovable');
+export const kTransferable = Symbol.for('Tinypool.transferable');
+export const kValue = Symbol.for('Tinypool.valueOf');
+export const kQueueOptions = Symbol.for('Tinypool.queueOptions');
 
 // True if the object implements the Transferable interface
 export function isTransferable (value : any) : boolean {
@@ -47,7 +41,7 @@ export function isTransferable (value : any) : boolean {
 }
 
 // True if object implements Transferable and has been returned
-// by the Piscina.move() function
+// by the Tinypool.move() function
 export function isMovable (value : any) : boolean {
   return isTransferable(value) && value[kMovable] === true;
 }
