@@ -1019,5 +1019,5 @@ class Tinypool extends EventEmitterAsyncResource {
 }
 
 export * from './common'
-export { Tinypool };
+export { Tinypool, Options };
 export default Tinypool;
