@@ -1,38 +1,40 @@
-'use strict';
+'use strict'
 
-const Piscina = require('../../dist/src');
+const Piscina = require('../../dist/src')
 
 class Shared {
-  constructor (data) {
-    this.name = 'shared';
-    this.data = data;
+  constructor(data) {
+    this.name = 'shared'
+    this.data = data
   }
 
-  get [Piscina.transferableSymbol] () {
-    return [this.data];
+  get [Piscina.transferableSymbol]() {
+    return [this.data]
   }
 
-  get [Piscina.valueSymbol] () {
-    return { name: this.name, data: this.data };
+  get [Piscina.valueSymbol]() {
+    return { name: this.name, data: this.data }
   }
 
-  make () {
-    return Piscina.move(this);
+  make() {
+    return Piscina.move(this)
   }
 }
 
-let time;
+let time
 export default {
   send: async () => {
-    const data = new ArrayBuffer(128);
-    const shared = new Shared(data);
+    const data = new ArrayBuffer(128)
+    const shared = new Shared(data)
     try {
-      return shared.make();
+      return shared.make()
     } finally {
-      setTimeout(() => { time = data.byteLength; }, 1000);
+      setTimeout(() => {
+        time = data.byteLength
+      }, 1000)
     }
   },
   get: () => {
-    return time;
-  }
-};
+    return time
+  },
+}

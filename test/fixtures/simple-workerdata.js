@@ -1,6 +1,8 @@
-import Tinypool from '../../dist/esm/index.js';
-import assert from 'assert';
+import Tinypool from '../../dist/esm/index.js'
+import assert from 'assert'
 
-assert.strictEqual(Tinypool.workerData, 'ABC');
+assert.strictEqual(Tinypool.workerData, 'ABC')
 
-export default function () { return 'done'; }
+export default function () {
+  return 'done'
+}

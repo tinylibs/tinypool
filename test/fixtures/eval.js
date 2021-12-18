@@ -1,2 +1,4 @@
 // eslint-disable-next-line no-eval
-export default function (code) { return eval(code); };
+export default function (code) {
+  return eval(code)
+}

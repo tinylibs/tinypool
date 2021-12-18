@@ -1,10 +1,10 @@
-import Tinypool from '../../dist/esm/index.js';
-import assert from 'assert';
-import { types } from 'util';
+import Tinypool from '../../dist/esm/index.js'
+import assert from 'assert'
+import { types } from 'util'
 
 export default function (moved) {
   if (moved !== undefined) {
-    assert(types.isAnyArrayBuffer(moved));
+    assert(types.isAnyArrayBuffer(moved))
   }
-  return Tinypool.move(new ArrayBuffer(10));
+  return Tinypool.move(new ArrayBuffer(10))
 }
