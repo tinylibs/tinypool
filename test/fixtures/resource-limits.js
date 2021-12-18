@@ -1,8 +1,8 @@
-'use strict';
+'use strict'
 
 export default () => {
-  const array = [];
+  const array = []
   while (true) {
-    array.push([array]);
+    array.push([array])
   }
-};
+}

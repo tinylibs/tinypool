@@ -1,7 +1,11 @@
-'use strict';
+'use strict'
 
-export function a () { return 'a'; }
+export function a() {
+  return 'a'
+}
 
-export function b () { return 'b'; }
+export function b() {
+  return 'b'
+}
 
 export default a

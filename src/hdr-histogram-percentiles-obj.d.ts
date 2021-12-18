@@ -1,2 +1,1 @@
-declare module 'hdr-histogram-percentiles-obj';
-
+declare module 'hdr-histogram-percentiles-obj'
