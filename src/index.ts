@@ -286,8 +286,8 @@ class TaskInfo extends AsyncResource implements Task {
   }
 
   done(err: Error | null, result?: any): void {
-    this.runInAsyncScope(this.callback, null, err, result)
     this.emitDestroy() // `TaskInfo`s are used only once.
+    this.runInAsyncScope(this.callback, null, err, result)
     // If an abort signal was used, remove the listener from it when
     // done to make sure we do not accidentally leak.
     if (this.abortSignal && this.abortListener) {
@@ -775,9 +775,6 @@ class ThreadPool {
     }
     filename = maybeFileURLToPath(filename)
 
-    // Look for a Worker with a minimum number of tasks it is currently running.
-    let workerInfo: WorkerInfo | null = this.workers.findAvailable()
-
     let resolve: (result: any) => void
     let reject: (err: Error) => void
     // eslint-disable-next-line
@@ -792,13 +789,19 @@ class ThreadPool {
       name,
       (err: Error | null, result: any) => {
         this.completed++
-        if (workerInfo && this.options.isolateWorkers) {
-          this._removeWorker(workerInfo)
-        }
         if (err !== null) {
           reject(err)
         } else {
           resolve(result)
+        }
+
+        // When `isolateWorkers` is enabled, remove the worker after task is finished
+        if (this.options.isolateWorkers && taskInfo.workerInfo) {
+          taskInfo.workerInfo.taskInfos.delete(taskInfo.taskId)
+          if (!taskInfo.workerInfo.taskInfos.size) {
+            this._removeWorker(taskInfo.workerInfo)
+            this._ensureMinimumWorkers()
+          }
         }
       },
       signal,
@@ -848,6 +851,9 @@ class ThreadPool {
 
       return ret
     }
+
+    // Look for a Worker with a minimum number of tasks it is currently running.
+    let workerInfo: WorkerInfo | null = this.workers.findAvailable()
 
     // If we want the ability to abort this task, use only workers that have
     // no running tasks.
