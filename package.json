@@ -10,7 +10,7 @@
     "dist/**"
   ],
   "scripts": {
-    "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --no-coverage",
     "test:dev": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --no-coverage",
     "dev": "tsup --watch",
     "build": "tsup --minify",
@@ -63,8 +63,7 @@
   "jest": {
     "rootDir": ".",
     "moduleNameMapper": {
-      "^tinypool$": "<rootDir>/dist/esm/index.js",
-      "^tinypool/common$": "<rootDir>/dist/esm/common.js"
+      "^tinypool$": "<rootDir>/dist/esm/index.js"
     },
     "modulePathIgnorePatterns": [
       "dist"
