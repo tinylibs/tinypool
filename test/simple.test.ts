@@ -156,3 +156,23 @@ test('can destroy pool while tasks are running', async () => {
     /Terminating worker thread/
   )
 })
+
+test('isolateWorkers: false', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/isolated.js'),
+    isolateWorkers: false,
+  })
+  expect(await pool.run({})).toBe(1)
+  expect(await pool.run({})).toBe(2)
+  expect(await pool.run({})).toBe(3)
+})
+
+test('isolateWorkers: true', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/isolated.js'),
+    isolateWorkers: true,
+  })
+  expect(await pool.run({})).toBe(1)
+  expect(await pool.run({})).toBe(1)
+  expect(await pool.run({})).toBe(1)
+})
