@@ -130,6 +130,7 @@ interface Options {
   workerData?: any
   taskQueue?: TaskQueue
   trackUnmanagedFds?: boolean
+  isolateWorkers?: boolean
 }
 
 interface FilledOptions extends Options {
@@ -774,6 +775,9 @@ class ThreadPool {
     }
     filename = maybeFileURLToPath(filename)
 
+    // Look for a Worker with a minimum number of tasks it is currently running.
+    let workerInfo: WorkerInfo | null = this.workers.findAvailable()
+
     let resolve: (result: any) => void
     let reject: (err: Error) => void
     // eslint-disable-next-line
@@ -788,6 +792,9 @@ class ThreadPool {
       name,
       (err: Error | null, result: any) => {
         this.completed++
+        if (workerInfo && this.options.isolateWorkers) {
+          this._removeWorker(workerInfo)
+        }
         if (err !== null) {
           reject(err)
         } else {
@@ -842,9 +849,6 @@ class ThreadPool {
       return ret
     }
 
-    // Look for a Worker with a minimum number of tasks it is currently running.
-    let workerInfo: WorkerInfo | null = this.workers.findAvailable()
-
     // If we want the ability to abort this task, use only workers that have
     // no running tasks.
     if (workerInfo !== null && workerInfo.currentUsage() > 0 && signal) {
@@ -877,6 +881,7 @@ class ThreadPool {
     taskInfo.started = now
     workerInfo.postTask(taskInfo)
     this._maybeDrain()
+
     return ret
   }
 
