@@ -42,6 +42,10 @@ export default ({ a, b }) => {
 
 We have a similar API to Piscina, so for more information, you can read Piscina's detailed [documentation](https://github.com/piscinajs/piscina#piscina---the-nodejs-worker-pool) and apply the same techniques here.
 
+###### Additional Options
+
+- `isolateWorkers`: Default to `false`. Always starts with a fresh worker when running tasks to isolate the environment.
+
 ## Credits
 
 [The Vitest team](https://vitest.dev/) for giving me the chance of creating and maintaing this project for vitest.
