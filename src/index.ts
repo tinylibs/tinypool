@@ -285,7 +285,7 @@ class TaskInfo extends AsyncResource implements Task {
     return ret
   }
 
-  done(err: Error | null, result?: any): void {
+  done(err: unknown | null, result?: any): void {
     this.emitDestroy() // `TaskInfo`s are used only once.
     this.runInAsyncScope(this.callback, null, err, result)
     // If an abort signal was used, remove the listener from it when
@@ -605,6 +605,29 @@ class ThreadPool {
       trackUnmanagedFds: this.options.trackUnmanagedFds,
     })
 
+    const onMessage = (message: ResponseMessage) => {
+      const { taskId, result } = message
+      // In case of success: Call the callback that was passed to `runTask`,
+      // remove the `TaskInfo` associated with the Worker, which marks it as
+      // free again.
+      const taskInfo = workerInfo.taskInfos.get(taskId)
+      workerInfo.taskInfos.delete(taskId)
+
+      if (!this.options.isolateWorkers) pool.workers.maybeAvailable(workerInfo)
+
+      /* istanbul ignore if */
+      if (taskInfo === undefined) {
+        const err = new Error(
+          `Unexpected message from Worker: ${inspect(message)}`
+        )
+        pool.publicInterface.emit('error', err)
+      } else {
+        taskInfo.done(message.error, result)
+      }
+
+      pool._processPendingMessages()
+    }
+
     const { port1, port2 } = new MessageChannel()
     const workerInfo = new WorkerInfo(worker, port1, onMessage)
     if (this.startingUp) {
@@ -620,30 +643,8 @@ class ThreadPool {
       sharedBuffer: workerInfo.sharedBuffer,
       useAtomics: this.options.useAtomics,
     }
+
     worker.postMessage(message, [port2])
-
-    function onMessage(message: ResponseMessage) {
-      const { taskId, result } = message
-      // In case of success: Call the callback that was passed to `runTask`,
-      // remove the `TaskInfo` associated with the Worker, which marks it as
-      // free again.
-      const taskInfo = workerInfo.taskInfos.get(taskId)
-      workerInfo.taskInfos.delete(taskId)
-
-      pool.workers.maybeAvailable(workerInfo)
-
-      /* istanbul ignore if */
-      if (taskInfo === undefined) {
-        const err = new Error(
-          `Unexpected message from Worker: ${inspect(message)}`
-        )
-        pool.publicInterface.emit('error', err)
-      } else {
-        taskInfo.done(message.error, result)
-      }
-
-      pool._processPendingMessages()
-    }
 
     worker.on('message', (message: ReadyMessage) => {
       if (message.ready === true) {
