@@ -285,7 +285,7 @@ class TaskInfo extends AsyncResource implements Task {
     return ret
   }
 
-  done(err: Error | null, result?: any): void {
+  done(err: unknown | null, result?: any): void {
     this.emitDestroy() // `TaskInfo`s are used only once.
     this.runInAsyncScope(this.callback, null, err, result)
     // If an abort signal was used, remove the listener from it when
