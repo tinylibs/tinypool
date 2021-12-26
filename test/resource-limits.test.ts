@@ -8,6 +8,7 @@ test('resourceLimits causes task to reject', async () => {
   const worker = new Tinypool({
     filename: resolve(__dirname, 'fixtures/resource-limits.js'),
     resourceLimits: {
+
       maxOldGenerationSizeMb: 4,
       maxYoungGenerationSizeMb: 2,
       codeRangeSizeMb: 4,
