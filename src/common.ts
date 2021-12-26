@@ -22,7 +22,7 @@ export interface ReadyMessage {
 export interface ResponseMessage {
   taskId: number
   result: any
-  error: Error | null
+  error: unknown | null
 }
 
 // Internal symbol used to mark Transferable objects returned

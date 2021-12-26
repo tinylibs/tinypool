@@ -8,15 +8,11 @@ test('resourceLimits causes task to reject', async () => {
   const worker = new Tinypool({
     filename: resolve(__dirname, 'fixtures/resource-limits.js'),
     resourceLimits: {
-      maxOldGenerationSizeMb: 16 || Number,
-      maxYoungGenerationSizeMb: 4 || Number,
-      codeRangeSizeMb: 16 || Number,
+
+      maxOldGenerationSizeMb: 4,
+      maxYoungGenerationSizeMb: 2,
+      codeRangeSizeMb: 4,
     },
-    // resourceLimits: {
-    //   maxOldGenerationSizeMb: 16,
-    //   maxYoungGenerationSizeMb: 4,
-    //   codeRangeSizeMb: 16,
-    // },
   })
   worker.on('error', () => {
     // Ignore any additional errors that may occur.
@@ -33,9 +29,9 @@ test('resourceLimits causes task to reject', async () => {
     // now.
   })
   const limits: any = worker.options.resourceLimits
-  expect(limits.maxOldGenerationSizeMb).toBe(16)
-  expect(limits.maxYoungGenerationSizeMb).toBe(4)
-  expect(limits.codeRangeSizeMb).toBe(16)
+  expect(limits.maxOldGenerationSizeMb).toBe(4)
+  expect(limits.maxYoungGenerationSizeMb).toBe(2)
+  expect(limits.codeRangeSizeMb).toBe(4)
   expect(worker.run(null)).rejects.toThrow(
     /Worker terminated due to reaching memory limit: JS heap out of memory/
   )
