@@ -13,7 +13,7 @@
     "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --no-coverage",
     "test:dev": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --no-coverage",
     "dev": "tsup --watch",
-    "build": "tsup --minify",
+    "build": "tsup",
     "publish": "clean-publish",
     "prepare": "husky install"
   },
