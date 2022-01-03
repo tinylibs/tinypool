@@ -13,11 +13,14 @@ test('basic test', async () => {
   expect(result).toBe('done')
 })
 
+test('isWorkerThread correct value', async () => {
+  expect(Tinypool.isWorkerThread).toBe(false)
+})
+
 test('Tinypool instance is an EventEmitter', async () => {
   const piscina = new Tinypool()
   expect(piscina instanceof EventEmitter).toBe(true)
 })
-//
 
 test('Tinypool constructor options are correctly set', async () => {
   const piscina = new Tinypool({
@@ -166,7 +169,6 @@ test('isolateWorkers: false', async () => {
   expect(await pool.run({})).toBe(0)
   expect(await pool.run({})).toBe(1)
   expect(await pool.run({})).toBe(2)
-
 })
 
 test('isolateWorkers: true', async () => {
@@ -178,5 +180,4 @@ test('isolateWorkers: true', async () => {
   expect(await pool.run({})).toBe(0)
   expect(await pool.run({})).toBe(0)
   expect(await pool.run({})).toBe(0)
-
 })
