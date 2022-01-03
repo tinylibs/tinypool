@@ -55,7 +55,14 @@ async function getHandler(
   try {
     // With our current set of TypeScript options, this is transpiled to
     // `require(filename)`.
-    handler = await import(filename)
+    const handlerModule = await import(filename)
+
+    // Check if the default export is an object, because dynamic import
+    // resolves with `{ default: { default: [Function] } }` for CJS modules.
+    handler =
+      (typeof handlerModule.default !== 'function' && handlerModule.default) ||
+      handlerModule
+
     if (typeof handler !== 'function') {
       handler = await (handler as any)[name]
     }
