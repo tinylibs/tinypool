@@ -7,13 +7,13 @@ import {
 import { once } from 'events'
 import EventEmitterAsyncResource from './EventEmitterAsyncResource'
 import { AsyncResource } from 'async_hooks'
-import { cpus } from 'os'
 import { fileURLToPath, URL } from 'url'
 import { dirname, join, resolve } from 'path'
 import { inspect, types } from 'util'
 import assert from 'assert'
 import { performance } from 'perf_hooks'
 import { readFileSync } from 'fs'
+import physicalCpuCount from './physicalCpuCount'
 import {
   ReadyMessage,
   RequestMessage,
@@ -44,7 +44,7 @@ declare global {
   }
 }
 
-const cpuCount: number = cpus().length
+const cpuCount: number = physicalCpuCount
 
 interface AbortSignalEventTargetAddOptions {
   once: boolean

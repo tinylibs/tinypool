@@ -7,6 +7,7 @@ Tinypool is a fork of piscina. What we try to achieve in this library, is to eli
 - ✅ Smaller install size, 36KB
 - ✅ Minimal
 - ✅ No dependencies
+- ✅ Physical cores instead of Logical cores with [physical-cpu-count](https://www.npmjs.com/package/physical-cpu-count)
 - ❌ No utilization
 - ❌ No NAPI
 
