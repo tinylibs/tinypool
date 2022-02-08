@@ -149,7 +149,7 @@ const kDefaultOptions: FilledOptions = {
   filename: null,
   name: 'default',
   minThreads: Math.max(cpuCount / 2, 1),
-  maxThreads: cpuCount * 1.5,
+  maxThreads: cpuCount,
   idleTimeout: 0,
   maxQueue: Infinity,
   concurrentTasksPerWorker: 1,
@@ -586,6 +586,12 @@ class ThreadPool {
     this.startingUp = false
   }
 
+  _ensureMaximumWorkers(): void {
+    while (this.workers.size < this.options.maxThreads) {
+      this._addNewWorker()
+    }
+  }
+
   _ensureMinimumWorkers(): void {
     while (this.workers.size < this.options.minThreads) {
       this._addNewWorker()
@@ -801,7 +807,7 @@ class ThreadPool {
           taskInfo.workerInfo.taskInfos.delete(taskInfo.taskId)
           if (!taskInfo.workerInfo.taskInfos.size) {
             this._removeWorker(taskInfo.workerInfo)
-            this._ensureMinimumWorkers()
+            this._ensureMaximumWorkers()
           }
         }
       },
