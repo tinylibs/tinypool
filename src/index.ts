@@ -149,7 +149,7 @@ const kDefaultOptions: FilledOptions = {
   filename: null,
   name: 'default',
   minThreads: Math.max(cpuCount / 2, 1),
-  maxThreads: cpuCount * 1.5,
+  maxThreads: cpuCount,
   idleTimeout: 0,
   maxQueue: Infinity,
   concurrentTasksPerWorker: 1,
