@@ -1,4 +1,4 @@
-import type { MessagePort } from 'worker_threads'
+import type { MessagePort, TransferListItem } from 'worker_threads'
 
 export interface StartupMessage {
   filename: string | null
@@ -33,7 +33,7 @@ export const kValue = Symbol.for('Tinypool.valueOf')
 export const kQueueOptions = Symbol.for('Tinypool.queueOptions')
 
 // True if the object implements the Transferable interface
-export function isTransferable(value: any): boolean {
+export function isTransferable(value: any): value is Transferable {
   return (
     value != null &&
     typeof value === 'object' &&
@@ -58,8 +58,9 @@ export function markMovable(value: object): void {
 }
 
 export interface Transferable {
-  readonly [kTransferable]: object
+  readonly [kTransferable]: TransferListItem
   readonly [kValue]: object
+  readonly [kMovable]?: boolean
 }
 
 export interface Task {

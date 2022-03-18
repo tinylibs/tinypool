@@ -3,6 +3,7 @@ import {
   MessageChannel,
   MessagePort,
   receiveMessageOnPort,
+  TransferListItem,
 } from 'worker_threads'
 import { once } from 'events'
 import EventEmitterAsyncResource from './EventEmitterAsyncResource'
@@ -28,7 +29,6 @@ import {
   kQueueOptions,
   isTransferable,
   markMovable,
-  isMovable,
   kTransferable,
   kValue,
 } from './common'
@@ -159,14 +159,14 @@ const kDefaultOptions: FilledOptions = {
 }
 
 interface RunOptions {
-  transferList?: TransferList
+  transferList?: TransferListItem[]
   filename?: string | null
   signal?: AbortSignalAny | null
   name?: string | null
 }
 
 interface FilledRunOptions extends RunOptions {
-  transferList: TransferList | never
+  transferList: TransferListItem[] | undefined
   filename: string | null
   signal: AbortSignalAny | null
   name: string | null
@@ -179,17 +179,17 @@ const kDefaultRunOptions: FilledRunOptions = {
   name: null,
 }
 
-class DirectlyTransferable implements Transferable {
-  #value: object
-  constructor(value: object) {
+class DirectlyTransferable<T extends TransferListItem> implements Transferable {
+  #value: T
+  constructor(value: T) {
     this.#value = value
   }
 
-  get [kTransferable](): object {
+  get [kTransferable](): T {
     return this.#value
   }
 
-  get [kValue](): object {
+  get [kValue](): T {
     return this.#value
   }
 }
@@ -200,11 +200,11 @@ class ArrayBufferViewTransferable implements Transferable {
     this.#view = view
   }
 
-  get [kTransferable](): object {
+  get [kTransferable](): ArrayBufferLike {
     return this.#view.buffer
   }
 
-  get [kValue](): object {
+  get [kValue](): ArrayBufferView {
     return this.#view
   }
 }
@@ -212,15 +212,6 @@ class ArrayBufferViewTransferable implements Transferable {
 let taskIdCounter = 0
 
 type TaskCallback = (err: Error, result: any) => void
-// Grab the type of `transferList` off `MessagePort`. At the time of writing,
-// only ArrayBuffer and MessagePort are valid, but let's avoid having to update
-// our types here every time Node.js adds support for more objects.
-type TransferList = MessagePort extends {
-  postMessage(value: any, transferList: infer T): any
-}
-  ? T
-  : never
-type TransferListItem = TransferList extends (infer T)[] ? T : never
 
 function maybeFileURLToPath(filename: string): string {
   return filename.startsWith('file:')
@@ -233,7 +224,7 @@ function maybeFileURLToPath(filename: string): string {
 class TaskInfo extends AsyncResource implements Task {
   callback: TaskCallback
   task: any
-  transferList: TransferList
+  transferList: TransferListItem[]
   filename: string
   name: string
   taskId: number
@@ -245,7 +236,7 @@ class TaskInfo extends AsyncResource implements Task {
 
   constructor(
     task: any,
-    transferList: TransferList,
+    transferList: TransferListItem[],
     filename: string,
     name: string,
     callback: TaskCallback,
@@ -254,23 +245,8 @@ class TaskInfo extends AsyncResource implements Task {
   ) {
     super('Tinypool.Task', { requireManualDestroy: true, triggerAsyncId })
     this.callback = callback
-    this.task = task
+    this.task = fillTransferList(task, transferList)
     this.transferList = transferList
-
-    // If the task is a Transferable returned by
-    // Tinypool.move(), then add it to the transferList
-    // automatically
-    if (isMovable(task)) {
-      // This condition should never be hit but typescript
-      // complains if we dont do the check.
-      /* istanbul ignore if */
-      if (this.transferList == null) {
-        this.transferList = []
-      }
-      this.transferList = this.transferList.concat(task[kTransferable])
-      this.task = task[kValue]
-    }
-
     this.filename = filename
     this.name = name
     this.taskId = taskIdCounter++
@@ -599,7 +575,8 @@ class ThreadPool {
   }
 
   _addNewWorker(): void {
-    const pool = this
+    const transferList: TransferListItem[] = []
+    const workerData = fillTransferList(this.options.workerData, transferList)
 
     const __dirname = dirname(fileURLToPath(import.meta.url))
     const worker = new Worker(resolve(__dirname, './worker.js'), {
@@ -607,7 +584,8 @@ class ThreadPool {
       argv: this.options.argv,
       execArgv: this.options.execArgv,
       resourceLimits: this.options.resourceLimits,
-      workerData: this.options.workerData,
+      workerData,
+      transferList,
       trackUnmanagedFds: this.options.trackUnmanagedFds,
     })
 
@@ -619,19 +597,21 @@ class ThreadPool {
       const taskInfo = workerInfo.taskInfos.get(taskId)
       workerInfo.taskInfos.delete(taskId)
 
-      if (!this.options.isolateWorkers) pool.workers.maybeAvailable(workerInfo)
+      if (!this.options.isolateWorkers) {
+        this.workers.maybeAvailable(workerInfo)
+      }
 
       /* istanbul ignore if */
       if (taskInfo === undefined) {
         const err = new Error(
           `Unexpected message from Worker: ${inspect(message)}`
         )
-        pool.publicInterface.emit('error', err)
+        this.publicInterface.emit('error', err)
       } else {
         taskInfo.done(message.error, result)
       }
 
-      pool._processPendingMessages()
+      this._processPendingMessages()
     }
 
     const { port1, port2 } = new MessageChannel()
@@ -1002,18 +982,11 @@ class Tinypool extends EventEmitterAsyncResource {
     return version
   }
 
-  static move(
-    val:
-      | Transferable
-      | TransferListItem
-      | ArrayBufferView
-      | ArrayBuffer
-      | MessagePort
-  ) {
+  static move(val: Transferable | TransferListItem | NodeJS.ArrayBufferView) {
     if (val != null && typeof val === 'object' && typeof val !== 'function') {
       if (!isTransferable(val)) {
-        if ((types as any).isArrayBufferView(val)) {
-          val = new ArrayBufferViewTransferable(val as ArrayBufferView)
+        if (types.isArrayBufferView(val)) {
+          val = new ArrayBufferViewTransferable(val)
         } else {
           val = new DirectlyTransferable(val)
         }
@@ -1034,6 +1007,35 @@ class Tinypool extends EventEmitterAsyncResource {
   static get queueOptionsSymbol() {
     return kQueueOptions
   }
+}
+
+/**
+ * Handle transferable `data` or transferable properties of `data` by unwrapping
+ * them and adding their transferable objects to the given `transferList` array.
+ */
+function fillTransferList(data: any, transferList: TransferListItem[]): any {
+  if (isTransferable(data)) {
+    if (!transferList.includes(data[kTransferable])) {
+      transferList.push(data[kTransferable])
+    }
+    return data[kValue]
+  }
+  if (data && data.constructor === Object) {
+    let cloned = false
+    for (const [key, value] of Object.entries(data)) {
+      if (isTransferable(value)) {
+        if (!cloned) {
+          cloned = true
+          data = { ...data }
+        }
+        data[key] = value[kValue]
+        if (!transferList.includes(value[kTransferable])) {
+          transferList.push(value[kTransferable])
+        }
+      }
+    }
+  }
+  return data
 }
 
 export * from './common'
