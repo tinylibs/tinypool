@@ -982,18 +982,18 @@ class Tinypool extends EventEmitterAsyncResource {
     return version
   }
 
-  static move(val: Transferable | TransferListItem | NodeJS.ArrayBufferView) {
+  static move<T>(val: T | Transferable): T {
     if (val != null && typeof val === 'object' && typeof val !== 'function') {
       if (!isTransferable(val)) {
         if (types.isArrayBufferView(val)) {
           val = new ArrayBufferViewTransferable(val)
         } else {
-          val = new DirectlyTransferable(val)
+          val = new DirectlyTransferable(val as any)
         }
       }
       markMovable(val)
     }
-    return val
+    return val as T
   }
 
   static get transferableSymbol() {
