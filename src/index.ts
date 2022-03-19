@@ -1028,7 +1028,13 @@ function fillTransferList(data: any, transferList: TransferListItem[]): any {
           cloned = true
           data = { ...data }
         }
-        data[key] = value[kValue]
+        // use defineProperty in case of a getter
+        Object.defineProperty(data, key, {
+          value: value[kValue],
+          configurable: true,
+          enumerable: true,
+          writable: true,
+        })
         if (!transferList.includes(value[kTransferable])) {
           transferList.push(value[kTransferable])
         }
