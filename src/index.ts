@@ -1022,13 +1022,18 @@ function fillTransferList(data: any, transferList: TransferListItem[]): any {
   }
   if (data && data.constructor === Object) {
     let cloned = false
-    for (const [key, value] of Object.entries(data)) {
+    for (const key of Object.getOwnPropertyNames(data)) {
+      const value = data[key]
       if (isTransferable(value)) {
         if (!cloned) {
           cloned = true
-          data = { ...data }
+          // Avoid calling getters again by not using {...data}
+          data = Object.defineProperties(
+            {},
+            Object.getOwnPropertyDescriptors(data)
+          )
         }
-        // use defineProperty in case of a getter
+        // Overwrite getters in the cloned data.
         Object.defineProperty(data, key, {
           value: value[kValue],
           configurable: true,
