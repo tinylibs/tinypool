@@ -1,10 +1,11 @@
 // https://www.npmjs.com/package/physical-cpu-count in ESM
-
 import os from 'os'
 import childProcess from 'child_process'
 
 function exec(command: string) {
-  const output = childProcess.execSync(command, { encoding: 'utf8' })
+  const output = childProcess.execSync(command, {
+    encoding: 'utf8',
+  })
   return output
 }
 
@@ -14,7 +15,7 @@ try {
   const platform = os.platform()
 
   if (platform === 'linux') {
-    const output = exec('lscpu -p | egrep -v "^#" | sort -u -t, -k 2,4 | wc -l')
+    const output = exec('cat /proc/cpuinfo | grep "physical id" | sort | wc -l')
     amount = parseInt(output.trim(), 10)
   } else if (platform === 'darwin') {
     const output = exec('sysctl -n hw.physicalcpu_max')
@@ -45,4 +46,4 @@ try {
   amount = os.cpus().length
 }
 
-export default amount
+export { amount }

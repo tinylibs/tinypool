@@ -13,7 +13,7 @@ import { inspect, types } from 'util'
 import assert from 'assert'
 import { performance } from 'perf_hooks'
 import { readFileSync } from 'fs'
-import physicalCpuCount from './physicalCpuCount'
+import { amount as physicalCpuCount } from './physicalCpuCount'
 import {
   ReadyMessage,
   RequestMessage,
