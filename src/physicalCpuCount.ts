@@ -5,6 +5,7 @@ import childProcess from 'child_process'
 function exec(command: string) {
   const output = childProcess.execSync(command, {
     encoding: 'utf8',
+    stdio: [null, null, null],
   })
   return output
 }
@@ -22,18 +23,8 @@ try {
     amount = parseInt(output.trim(), 10)
     // @ts-ignore
   } else if (platform === 'windows' || platform === 'win32') {
-    const output = exec('WMIC CPU Get NumberOfCores')
-    amount = output
-      .split(os.EOL)
-      .map(function parse(line) {
-        return parseInt(line)
-      })
-      .filter(function numbers(value) {
-        return !isNaN(value)
-      })
-      .reduce(function add(sum, number) {
-        return sum + number
-      }, 0)
+    // windows takes too long, so let's drop the support
+    throw new Error()
   } else {
     const cores = os.cpus().filter(function (cpu, index) {
       const hasHyperthreading = cpu.model.includes('Intel')
