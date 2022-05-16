@@ -150,7 +150,7 @@ interface FilledOptions extends Options {
 const kDefaultOptions: FilledOptions = {
   filename: null,
   name: 'default',
-  minThreads: Math.max(cpuCount / 2, 1),
+  minThreads: 0.5,
   maxThreads: cpuCount,
   idleTimeout: 0,
   maxQueue: Infinity,
@@ -972,6 +972,28 @@ class Tinypool extends EventEmitterAsyncResource {
   #pool: ThreadPool
 
   constructor(options: Options = {}) {
+    // convert fractional option values to int
+    if (
+      options.minThreads !== undefined &&
+      options.minThreads > 0 &&
+      options.minThreads < 1
+    ) {
+      options.minThreads = Math.max(
+        1,
+        Math.floor(options.minThreads * cpuCount)
+      )
+    }
+    if (
+      options.maxThreads !== undefined &&
+      options.maxThreads > 0 &&
+      options.maxThreads < 1
+    ) {
+      options.maxThreads = Math.max(
+        1,
+        Math.floor(options.maxThreads * cpuCount)
+      )
+    }
+
     super({ ...options, name: 'Tinypool' })
 
     if (
