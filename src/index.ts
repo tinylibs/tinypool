@@ -31,6 +31,7 @@ import {
   isMovable,
   kTransferable,
   kValue,
+  TinypoolData,
 } from './common'
 
 declare global {
@@ -39,6 +40,7 @@ declare global {
       __tinypool_state__: {
         isWorkerThread: boolean
         workerData: any
+        workerId: number
       }
     }
   }
@@ -540,6 +542,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
 class ThreadPool {
   publicInterface: Tinypool
   workers: AsynchronouslyCreatedResourcePool<WorkerInfo>
+  workerIds: Map<number, boolean> // Map<workerId, isIdAvailable>
   options: FilledOptions
   taskQueue: TaskQueue
   skipQueue: TaskInfo[] = []
@@ -576,6 +579,10 @@ class ThreadPool {
       this.options.maxQueue = options.maxQueue ?? kDefaultOptions.maxQueue
     }
 
+    this.workerIds = new Map(
+      new Array(options.maxThreads).fill(0).map((_, i) => [i + 1, true])
+    )
+
     this.workers = new AsynchronouslyCreatedResourcePool<WorkerInfo>(
       this.options.concurrentTasksPerWorker
     )
@@ -600,14 +607,31 @@ class ThreadPool {
 
   _addNewWorker(): void {
     const pool = this
+    const workerIds = this.workerIds
 
     const __dirname = dirname(fileURLToPath(import.meta.url))
+
+    let workerId: number
+
+    workerIds.forEach((isIdAvailable, _workerId) => {
+      if (isIdAvailable && !workerId) {
+        workerId = _workerId
+        workerIds.set(_workerId, false)
+      }
+      return
+    })
+
+    const tinypoolPrivateData = { workerId: workerId! }
+
     const worker = new Worker(resolve(__dirname, './worker.js'), {
       env: this.options.env,
       argv: this.options.argv,
       execArgv: this.options.execArgv,
       resourceLimits: this.options.resourceLimits,
-      workerData: this.options.workerData,
+      workerData: [
+        tinypoolPrivateData,
+        this.options.workerData,
+      ] as TinypoolData,
       trackUnmanagedFds: this.options.trackUnmanagedFds,
     })
 
@@ -698,6 +722,11 @@ class ThreadPool {
       } else {
         this.publicInterface.emit('error', err)
       }
+    })
+
+    worker.on('exit', () => {
+      // mark the id as available for new workers
+      workerIds.set(workerId, true)
     })
 
     worker.unref()
@@ -807,7 +836,7 @@ class ThreadPool {
           taskInfo.workerInfo.taskInfos.delete(taskInfo.taskId)
           if (!taskInfo.workerInfo.taskInfos.size) {
             this._removeWorker(taskInfo.workerInfo)
-            this._ensureMaximumWorkers()
+            // this._ensureMaximumWorkers()
           }
         }
       },
@@ -1036,6 +1065,8 @@ class Tinypool extends EventEmitterAsyncResource {
   }
 }
 
+const _workerId = process.__tinypool_state__?.workerId
+
 export * from './common'
-export { Tinypool, Options }
+export { Tinypool, Options, _workerId as workerId }
 export default Tinypool

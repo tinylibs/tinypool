@@ -25,6 +25,12 @@ export interface ResponseMessage {
   error: unknown | null
 }
 
+export interface TinypoolPrivateData {
+  workerId: number
+}
+
+export type TinypoolData = [TinypoolPrivateData, any] // [{ ... }, workerData]
+
 // Internal symbol used to mark Transferable objects returned
 // by the Tinypool.move() function
 const kMovable = Symbol('Tinypool.kMovable')

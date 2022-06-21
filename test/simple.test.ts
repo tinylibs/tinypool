@@ -181,3 +181,40 @@ test('isolateWorkers: true', async () => {
   expect(await pool.run({})).toBe(0)
   expect(await pool.run({})).toBe(0)
 })
+
+test('workerId for each thread, that does not go more than maxThreads', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/workerId.js'),
+    isolateWorkers: true,
+    minThreads: 2,
+    maxThreads: 2,
+  })
+  await pool.destroy()
+  expect(await pool.run({ slow: false })).toBe(1)
+  expect(await pool.run({ slow: true })).toBe(2)
+  expect(await pool.run({ slow: true })).toBe(1)
+  expect(await pool.run({ slow: false })).toBe(2)
+
+  await new Promise((res) => setTimeout(res, 100))
+})
+
+test('workerId should never be more than maxThreads', async () => {
+  const maxThreads = Math.floor(Math.random() * (4 - 1 + 1) + 1)
+
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/workerId.js'),
+    isolateWorkers: true,
+    maxThreads: maxThreads,
+  })
+  await pool.destroy()
+  expect(await pool.run({})).toBeLessThanOrEqual(maxThreads)
+  expect(await pool.run({})).toBeLessThanOrEqual(maxThreads)
+  expect(await pool.run({})).toBeLessThanOrEqual(maxThreads)
+  expect(await pool.run({})).toBeLessThanOrEqual(maxThreads)
+  expect(await pool.run({})).toBeLessThanOrEqual(maxThreads)
+  expect(await pool.run({})).toBeLessThanOrEqual(maxThreads)
+  expect(await pool.run({})).toBeLessThanOrEqual(maxThreads)
+  expect(await pool.run({})).toBeLessThanOrEqual(maxThreads)
+
+  await new Promise((res) => setTimeout(res, 100))
+})
