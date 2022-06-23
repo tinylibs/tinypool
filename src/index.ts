@@ -416,6 +416,7 @@ const Errors = {
 
 class WorkerInfo extends AsynchronouslyCreatedResource {
   worker: Worker
+  workerId: number
   taskInfos: Map<number, TaskInfo>
   idleTimeout: NodeJS.Timeout | null = null // eslint-disable-line no-undef
   port: MessagePort
@@ -423,9 +424,15 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   lastSeenResponseCount: number = 0
   onMessage: ResponseCallback
 
-  constructor(worker: Worker, port: MessagePort, onMessage: ResponseCallback) {
+  constructor(
+    worker: Worker,
+    port: MessagePort,
+    workerId: number,
+    onMessage: ResponseCallback
+  ) {
     super()
     this.worker = worker
+    this.workerId = workerId
     this.port = port
     this.port.on('message', (message: ResponseMessage) =>
       this._handleResponse(message)
@@ -608,19 +615,31 @@ class ThreadPool {
   _addNewWorker(): void {
     const pool = this
     const workerIds = this.workerIds
+    const workers = [...this.workers.pendingItems, ...this.workers.pendingItems]
+
+    const isWorkerIdsCompatible =
+      [...workerIds.values()].filter((isIdAvailable) => isIdAvailable === false)
+        .length === this.workers.size
 
     const __dirname = dirname(fileURLToPath(import.meta.url))
 
     let workerId: number
 
     workerIds.forEach((isIdAvailable, _workerId) => {
+      if (!isWorkerIdsCompatible) {
+        const worker = workers.find((worker) => worker.workerId === _workerId)
+        if (!worker) {
+          // worker is available
+          workerIds.set(_workerId, true)
+          isIdAvailable = true
+        }
+      }
+
       if (isIdAvailable && !workerId) {
         workerId = _workerId
         workerIds.set(_workerId, false)
       }
-      return
     })
-
     const tinypoolPrivateData = { workerId: workerId! }
 
     const worker = new Worker(resolve(__dirname, './worker.js'), {
@@ -659,7 +678,7 @@ class ThreadPool {
     }
 
     const { port1, port2 } = new MessageChannel()
-    const workerInfo = new WorkerInfo(worker, port1, onMessage)
+    const workerInfo = new WorkerInfo(worker, port1, workerId!, onMessage)
     if (this.startingUp) {
       // There is no point in waiting for the initial set of Workers to indicate
       // that they are ready, we just mark them as such from the start.
@@ -724,17 +743,13 @@ class ThreadPool {
       }
     })
 
-    worker.on('exit', () => {
-      // mark the id as available for new workers
-      workerIds.set(workerId, true)
-    })
-
     worker.unref()
     port1.on('close', () => {
       // The port is only closed if the Worker stops for some reason, but we
       // always .unref() the Worker itself. We want to receive e.g. 'error'
       // events on it, so we ref it once we know it's going to exit anyway.
       worker.ref()
+      workerIds.set(workerId, true)
     })
 
     this.workers.add(workerInfo)
@@ -833,11 +848,7 @@ class ThreadPool {
 
         // When `isolateWorkers` is enabled, remove the worker after task is finished
         if (this.options.isolateWorkers && taskInfo.workerInfo) {
-          taskInfo.workerInfo.taskInfos.delete(taskInfo.taskId)
-          if (!taskInfo.workerInfo.taskInfos.size) {
-            this._removeWorker(taskInfo.workerInfo)
-            // this._ensureMaximumWorkers()
-          }
+          this._removeWorker(taskInfo.workerInfo)
         }
       },
       signal,
