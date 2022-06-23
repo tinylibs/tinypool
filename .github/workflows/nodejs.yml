@@ -17,9 +17,12 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
+      - uses: pnpm/action-setup@v2.2.2
+        with:
+          version: 7.x.x
       - name: Install Dependencies
-        run: yarn install
+        run: pnpm install
       - name: Build
-        run: yarn build
+        run: pnpm build
       - name: Test
-        run: yarn test:ci
+        run: pnpm test:ci
