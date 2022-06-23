@@ -46,6 +46,8 @@ We have a similar API to Piscina, so for more information, you can read Piscina'
 ###### Additional Options
 
 - `isolateWorkers`: Default to `false`. Always starts with a fresh worker when running tasks to isolate the environment.
+- `workerId`: Each worker now has an id ( <= `maxThreads`) that can be imported
+  from `tinypool` in the worker itself (or `process.__tinypool_state__.workerId`)
 
 ## Credits
 

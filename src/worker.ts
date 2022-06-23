@@ -2,7 +2,7 @@ import {
   parentPort,
   MessagePort,
   receiveMessageOnPort,
-  workerData,
+  workerData as tinypoolData,
 } from 'worker_threads'
 import { pathToFileURL } from 'url'
 import {
@@ -10,6 +10,7 @@ import {
   RequestMessage,
   ResponseMessage,
   StartupMessage,
+  TinypoolData,
   kResponseCountField,
   kRequestCountField,
   isMovable,
@@ -17,9 +18,12 @@ import {
   kValue,
 } from './common'
 
+const [tinypoolPrivateData, workerData] = tinypoolData as TinypoolData
+
 process.__tinypool_state__ = {
   isWorkerThread: true,
   workerData: workerData,
+  workerId: tinypoolPrivateData.workerId,
 }
 
 const handlerCache: Map<string, Function> = new Map()
