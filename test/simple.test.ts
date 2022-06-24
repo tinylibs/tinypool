@@ -191,18 +191,13 @@ test('workerId for each thread, that does not go more than maxThreads', async ()
     minThreads: 2,
     maxThreads: 2,
   })
-  await pool.destroy()
 
   expect(pool.run({ slow: true })).resolves.toBe(1)
-  await sleep(10)
-  expect(pool.run({ slow: true })).resolves.toBe(2)
-  await sleep(10)
-  expect(pool.run({ slow: true })).resolves.toBe(1)
-  await sleep(10)
   expect(pool.run({ slow: false })).resolves.toBe(2)
+  expect(pool.run({ slow: true })).resolves.toBe(1)
+  expect(pool.run({ slow: true })).resolves.toBe(2)
 
-  // await pool.destroy()
-  await sleep(300)
+  await sleep(500)
 })
 
 test('workerId should never be more than maxThreads=1', async () => {

@@ -849,6 +849,7 @@ class ThreadPool {
         // When `isolateWorkers` is enabled, remove the worker after task is finished
         if (this.options.isolateWorkers && taskInfo.workerInfo) {
           this._removeWorker(taskInfo.workerInfo)
+          this._ensureMinimumWorkers()
         }
       },
       signal,
