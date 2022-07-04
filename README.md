@@ -13,6 +13,8 @@ Tinypool is a fork of piscina. What we try to achieve in this library, is to eli
 
 - Written in TypeScript, and ESM support only. For Node.js 14.x and higher.
 
+*In case you need more tiny libraries like tinypool or tinyspy, please consider submitting an [RFC](https://github.com/tinylibs/rfcs)*
+
 ## Example
 
 In `main.js`:
