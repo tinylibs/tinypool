@@ -16,8 +16,17 @@ try {
   const platform = os.platform()
 
   if (platform === 'linux') {
-    const output = exec('cat /proc/cpuinfo | grep "physical id" | sort | wc -l')
-    amount = parseInt(output.trim(), 10)
+    const output1 = exec(
+      'cat /proc/cpuinfo | grep "physical id" | sort |uniq | wc -l'
+    ) // physical cpu number
+    const output2 = exec(
+      'cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l'
+    ) // physical cpu core number in each cpu
+
+    const physicalCpuAmount = parseInt(output1.trim(), 10)
+    const physicalCoreAmount = parseInt(output2.trim(), 10)
+
+    amount = physicalCpuAmount * physicalCoreAmount
   } else if (platform === 'darwin') {
     const output = exec('sysctl -n hw.physicalcpu_max')
     amount = parseInt(output.trim(), 10)
