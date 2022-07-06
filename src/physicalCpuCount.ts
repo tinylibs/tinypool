@@ -30,8 +30,7 @@ try {
   } else if (platform === 'darwin') {
     const output = exec('sysctl -n hw.physicalcpu_max')
     amount = parseInt(output.trim(), 10)
-    // @ts-ignore
-  } else if (platform === 'windows' || platform === 'win32') {
+  } else if (platform === 'win32') {
     // windows takes too long, so let's drop the support
     throw new Error()
   } else {
