@@ -302,6 +302,7 @@ class TaskInfo extends AsyncResource implements Task {
         )
       }
     }
+    this.workerInfo?.freeWorkerId()
   }
 
   get [kQueueOptions](): object | null {
@@ -417,6 +418,7 @@ const Errors = {
 class WorkerInfo extends AsynchronouslyCreatedResource {
   worker: Worker
   workerId: number
+  freeWorkerId: () => void
   taskInfos: Map<number, TaskInfo>
   idleTimeout: NodeJS.Timeout | null = null // eslint-disable-line no-undef
   port: MessagePort
@@ -428,11 +430,13 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     worker: Worker,
     port: MessagePort,
     workerId: number,
+    freeWorkerId: () => void,
     onMessage: ResponseCallback
   ) {
     super()
     this.worker = worker
     this.workerId = workerId
+    this.freeWorkerId = freeWorkerId
     this.port = port
     this.port.on('message', (message: ResponseMessage) =>
       this._handleResponse(message)
@@ -678,7 +682,13 @@ class ThreadPool {
     }
 
     const { port1, port2 } = new MessageChannel()
-    const workerInfo = new WorkerInfo(worker, port1, workerId!, onMessage)
+    const workerInfo = new WorkerInfo(
+      worker,
+      port1,
+      workerId!,
+      () => workerIds.set(workerId, true),
+      onMessage
+    )
     if (this.startingUp) {
       // There is no point in waiting for the initial set of Workers to indicate
       // that they are ready, we just mark them as such from the start.
@@ -749,7 +759,6 @@ class ThreadPool {
       // always .unref() the Worker itself. We want to receive e.g. 'error'
       // events on it, so we ref it once we know it's going to exit anyway.
       worker.ref()
-      workerIds.set(workerId, true)
     })
 
     this.workers.add(workerInfo)
