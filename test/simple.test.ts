@@ -255,12 +255,14 @@ test('workerId should never be duplicated', async () => {
   function addWorkerId(workerId: number) {
     if (workerIds.includes(workerId)) {
       duplicated = true
+      console.debug('debug')
     }
     workerIds.push(workerId)
   }
 
   const createWorkerId = async (): Promise<number> => {
     const result = await pool.run({})
+    console.debug(workerIds, result)
     addWorkerId(result)
     return result
   }
