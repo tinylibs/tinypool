@@ -283,5 +283,5 @@ test('workerId should never be duplicated', async () => {
   }
 
   await pool.destroy()
-  await sleep(1000)
+  await sleep(5000)
 }, 30000)
