@@ -620,6 +620,12 @@ class ThreadPool {
     const pool = this
     const workerIds = this.workerIds
     const workers = [...this.workers.pendingItems, ...this.workers.pendingItems]
+    console.log('ids', [...workerIds.keys()])
+    console.log(
+      'busy workers',
+      workers.map((w) => w.workerId)
+    )
+    console.log('ids', [...workerIds.entries()])
 
     const isWorkerIdsCompatible =
       [...workerIds.values()].filter((isIdAvailable) => isIdAvailable === false)
@@ -634,7 +640,7 @@ class ThreadPool {
         const worker = workers.find((worker) => worker.workerId === _workerId)
         if (!worker) {
           // worker is available
-          workerIds.set(_workerId, true)
+          // workerIds.set(_workerId, true)
           isIdAvailable = true
         }
       }
@@ -644,6 +650,7 @@ class ThreadPool {
         workerIds.set(_workerId, false)
       }
     })
+    console.log('here', workerId!)
     const tinypoolPrivateData = { workerId: workerId! }
 
     const worker = new Worker(resolve(__dirname, './worker.js'), {
