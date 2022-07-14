@@ -243,6 +243,7 @@ test('workerId should never be more than maxThreads', async () => {
 // jest.setTimeout(1000)
 test('workerId should never be duplicated', async () => {
   const maxThreads = cpus().length + 4
+  console.log('maxThreads', maxThreads)
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/workerId.js'),
     isolateWorkers: true,
@@ -255,7 +256,7 @@ test('workerId should never be duplicated', async () => {
   function addWorkerId(workerId: number) {
     if (workerIds.includes(workerId)) {
       duplicated = true
-      console.debug('debug')
+      console.debug('fucked')
     }
     workerIds.push(workerId)
   }
