@@ -185,23 +185,6 @@ test('isolateWorkers: true', async () => {
   expect(await pool.run({})).toBe(0)
 })
 
-test('workerId for each thread, that does not go more than maxThreads', async () => {
-  const pool = new Tinypool({
-    filename: resolve(__dirname, 'fixtures/workerId.js'),
-    isolateWorkers: true,
-    minThreads: 2,
-    maxThreads: 2,
-  })
-
-  expect(pool.run({ slow: true })).resolves.toBe(1)
-  expect(pool.run({ slow: false })).resolves.toBe(2)
-  expect(pool.run({ slow: true })).resolves.toBe(1)
-  expect(pool.run({ slow: true })).resolves.toBe(2)
-
-  await sleep(500)
-})
-
-// jest.setTimeout(10000)
 test('workerId should never be more than maxThreads=1', async () => {
   const maxThreads = 1
   const pool = new Tinypool({
@@ -239,7 +222,6 @@ test('workerId should never be more than maxThreads', async () => {
   await sleep(300)
 })
 
-// jest.setTimeout(1000)
 test('workerId should never be duplicated', async () => {
   const maxThreads = cpus().length + 4
   // console.log('maxThreads', maxThreads)

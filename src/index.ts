@@ -302,7 +302,6 @@ class TaskInfo extends AsyncResource implements Task {
         )
       }
     }
-    this.workerInfo?.freeWorkerId()
   }
 
   get [kQueueOptions](): object | null {
@@ -451,6 +450,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   destroy(): void {
     this.worker.terminate()
     this.port.close()
+    this.freeWorkerId()
     this.clearIdleTimeout()
     for (const taskInfo of this.taskInfos.values()) {
       taskInfo.done(Errors.ThreadTermination())
@@ -620,12 +620,6 @@ class ThreadPool {
     const pool = this
     const workerIds = this.workerIds
     const workers = [...this.workers.pendingItems, ...this.workers.pendingItems]
-    // console.log('ids', [...workerIds.keys()])
-    /* console.log(
-      'busy workers',
-      workers.map((w) => w.workerId)
-    ) */
-    // console.log('ids', [...workerIds.entries()])
 
     const isWorkerIdsCompatible =
       [...workerIds.values()].filter((isIdAvailable) => isIdAvailable === false)
@@ -641,7 +635,7 @@ class ThreadPool {
         if (!worker) {
           // worker is available
           // workerIds.set(_workerId, true)
-          isIdAvailable = true
+          // isIdAvailable = true
         }
       }
 
