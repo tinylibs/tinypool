@@ -13,7 +13,7 @@ Tinypool is a fork of piscina. What we try to achieve in this library, is to eli
 
 - Written in TypeScript, and ESM support only. For Node.js 14.x and higher.
 
-*In case you need more tiny libraries like tinypool or tinyspy, please consider submitting an [RFC](https://github.com/tinylibs/rfcs)*
+_In case you need more tiny libraries like tinypool or tinyspy, please consider submitting an [RFC](https://github.com/tinylibs/rfcs)_
 
 ## Example
 
@@ -50,6 +50,11 @@ We have a similar API to Piscina, so for more information, you can read Piscina'
 - `isolateWorkers`: Default to `false`. Always starts with a fresh worker when running tasks to isolate the environment.
 - `workerId`: Each worker now has an id ( <= `maxThreads`) that can be imported
   from `tinypool` in the worker itself (or `process.__tinypool_state__.workerId`)
+
+## Authors
+
+| <a href="https://github.com/Aslemammad"> <img width='150' src="https://avatars.githubusercontent.com/u/37929992?v=4" /><br> Mohammad Bagher </a> |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ |
 
 ## Credits
 
