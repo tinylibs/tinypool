@@ -619,32 +619,16 @@ class ThreadPool {
   _addNewWorker(): void {
     const pool = this
     const workerIds = this.workerIds
-    const workers = [...this.workers.pendingItems, ...this.workers.pendingItems]
-
-    const isWorkerIdsCompatible =
-      [...workerIds.values()].filter((isIdAvailable) => isIdAvailable === false)
-        .length === this.workers.size
-
     const __dirname = dirname(fileURLToPath(import.meta.url))
 
     let workerId: number
 
     workerIds.forEach((isIdAvailable, _workerId) => {
-      if (!isWorkerIdsCompatible) {
-        const worker = workers.find((worker) => worker.workerId === _workerId)
-        if (!worker) {
-          // worker is available
-          // workerIds.set(_workerId, true)
-          // isIdAvailable = true
-        }
-      }
-
       if (isIdAvailable && !workerId) {
         workerId = _workerId
         workerIds.set(_workerId, false)
       }
     })
-    // console.log('here', workerId!)
     const tinypoolPrivateData = { workerId: workerId! }
 
     const worker = new Worker(resolve(__dirname, './worker.js'), {
