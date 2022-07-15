@@ -1,7 +1,6 @@
 import EventEmitter from 'events'
 import { cpus } from 'os'
 import { dirname, resolve } from 'path'
-import { workerId } from 'src'
 import Tinypool from 'tinypool'
 import { fileURLToPath, pathToFileURL } from 'url'
 
@@ -243,7 +242,7 @@ test('workerId should never be more than maxThreads', async () => {
 // jest.setTimeout(1000)
 test('workerId should never be duplicated', async () => {
   const maxThreads = cpus().length + 4
-  console.log('maxThreads', maxThreads)
+  // console.log('maxThreads', maxThreads)
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/workerId.js'),
     isolateWorkers: true,
@@ -256,26 +255,23 @@ test('workerId should never be duplicated', async () => {
   function addWorkerId(workerId: number) {
     if (workerIds.includes(workerId)) {
       duplicated = true
-      console.debug('fucked')
+      // console.log('fucked')
     }
     workerIds.push(workerId)
   }
 
   const createWorkerId = async (): Promise<number> => {
     const result = await pool.run({})
-    console.debug(workerIds, result)
     addWorkerId(result)
     return result
   }
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     if (duplicated) {
       continue
     }
     await Promise.all(
-      Array(maxThreads - 2)
-        .fill(0)
-        .map(() => createWorkerId())
+      new Array(maxThreads - 2).fill(0).map(() => createWorkerId())
     )
     workerIds.length = 0
 
