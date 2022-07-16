@@ -978,6 +978,7 @@ class Tinypool extends EventEmitterAsyncResource {
       options.minThreads > 0 &&
       options.minThreads < 1
     ) {
+      console.log(Math.floor(options.minThreads * cpuCount))
       options.minThreads = Math.max(
         1,
         Math.floor(options.minThreads * cpuCount)
