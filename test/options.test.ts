@@ -3,7 +3,6 @@ import Tinypool from 'tinypool'
 
 const testIf = (condition: boolean) => (condition ? test : test.skip)
 
-console.log('here', cpuCount)
 describe('options', () => {
   // TODO mock amount instead?
   testIf(cpuCount > 1)('fractional thread limits can be set', async () => {
@@ -14,7 +13,6 @@ describe('options', () => {
       maxThreads: max,
     })
 
-    console.log(p.options.minThreads, Math.floor(cpuCount * min))
     expect(p.options.minThreads).toBe(Math.floor(cpuCount * min))
     expect(p.options.maxThreads).toBe(Math.floor(cpuCount * max))
   })
