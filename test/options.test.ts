@@ -3,6 +3,7 @@ import Tinypool from 'tinypool'
 
 const testIf = (condition: boolean) => (condition ? test : test.skip)
 
+console.log(cpuCount)
 describe('options', () => {
   // TODO mock amount instead?
   testIf(cpuCount > 1)('fractional thread limits can be set', async () => {
