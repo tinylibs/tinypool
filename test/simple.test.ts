@@ -2,6 +2,7 @@ import EventEmitter from 'events'
 import { cpus } from 'os'
 import { dirname, resolve } from 'path'
 import Tinypool from 'tinypool'
+import { isMainThread } from 'worker_threads'
 import { fileURLToPath, pathToFileURL } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -17,7 +18,8 @@ test('basic test', async () => {
 })
 
 test('isWorkerThread correct value', async () => {
-  expect(Tinypool.isWorkerThread).toBe(false)
+  console.log(process.__tinypool_state__)
+  expect(Tinypool.isWorkerThread).toBe(!isMainThread)
 })
 
 test('Tinypool instance is an EventEmitter', async () => {
@@ -261,5 +263,5 @@ test('workerId should never be duplicated', async () => {
   }
 
   await pool.destroy()
-  await sleep(5000)
+  await sleep(1000)
 }, 30000)

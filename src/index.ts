@@ -5,8 +5,7 @@ import {
   receiveMessageOnPort,
 } from 'worker_threads'
 import { once } from 'events'
-import EventEmitterAsyncResource from './EventEmitterAsyncResource'
-import { AsyncResource } from 'async_hooks'
+import { EventEmitter } from 'events'
 import { fileURLToPath, URL } from 'url'
 import { dirname, join, resolve } from 'path'
 import { inspect, types } from 'util'
@@ -232,7 +231,7 @@ function maybeFileURLToPath(filename: string): string {
 
 // Extend AsyncResource so that async relations between posting a task and
 // receiving its result are visible to diagnostic tools.
-class TaskInfo extends AsyncResource implements Task {
+class TaskInfo implements Task {
   callback: TaskCallback
   task: any
   transferList: TransferList
@@ -251,10 +250,10 @@ class TaskInfo extends AsyncResource implements Task {
     filename: string,
     name: string,
     callback: TaskCallback,
-    abortSignal: AbortSignalAny | null,
-    triggerAsyncId: number
+    abortSignal: AbortSignalAny | null
+    // triggerAsyncId: number
   ) {
-    super('Tinypool.Task', { requireManualDestroy: true, triggerAsyncId })
+    // super('Tinypool.Task', { requireManualDestroy: true, triggerAsyncId })
     this.callback = callback
     this.task = task
     this.transferList = transferList
@@ -287,9 +286,9 @@ class TaskInfo extends AsyncResource implements Task {
     return ret
   }
 
-  done(err: unknown | null, result?: any): void {
-    this.emitDestroy() // `TaskInfo`s are used only once.
-    this.runInAsyncScope(this.callback, null, err, result)
+  done(): void {
+    /* this.emitDestroy() // `TaskInfo`s are used only once.
+    this.runInAsyncScope(this.callback, null, err, result) */
     // If an abort signal was used, remove the listener from it when
     // done to make sure we do not accidentally leak.
     if (this.abortSignal && this.abortListener) {
@@ -453,7 +452,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     this.freeWorkerId()
     this.clearIdleTimeout()
     for (const taskInfo of this.taskInfos.values()) {
-      taskInfo.done(Errors.ThreadTermination())
+      taskInfo.done()
     }
     this.taskInfos.clear()
   }
@@ -501,7 +500,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     } catch (err) {
       // This would mostly happen if e.g. message contains unserializable data
       // or transferList is invalid.
-      taskInfo.done(err)
+      taskInfo.done()
       return
     }
 
@@ -644,7 +643,7 @@ class ThreadPool {
     })
 
     const onMessage = (message: ResponseMessage) => {
-      const { taskId, result } = message
+      const { taskId } = message
       // In case of success: Call the callback that was passed to `runTask`,
       // remove the `TaskInfo` associated with the Worker, which marks it as
       // free again.
@@ -660,7 +659,7 @@ class ThreadPool {
         )
         pool.publicInterface.emit('error', err)
       } else {
-        taskInfo.done(message.error, result)
+        taskInfo.done()
       }
 
       pool._processPendingMessages()
@@ -731,7 +730,7 @@ class ThreadPool {
 
       if (taskInfos.length > 0) {
         for (const taskInfo of taskInfos) {
-          taskInfo.done(err, null)
+          taskInfo.done()
         }
       } else {
         this.publicInterface.emit('error', err)
@@ -846,8 +845,8 @@ class ThreadPool {
           this._ensureMinimumWorkers()
         }
       },
-      signal,
-      this.publicInterface.asyncResource.asyncId()
+      signal
+      // this.publicInterface.asyncResource.asyncId()
     )
 
     if (signal !== null) {
@@ -948,11 +947,11 @@ class ThreadPool {
   async destroy() {
     while (this.skipQueue.length > 0) {
       const taskInfo: TaskInfo = this.skipQueue.shift() as TaskInfo
-      taskInfo.done(new Error('Terminating worker thread'))
+      taskInfo.done()
     }
     while (this.taskQueue.size > 0) {
       const taskInfo: TaskInfo = this.taskQueue.shift() as TaskInfo
-      taskInfo.done(new Error('Terminating worker thread'))
+      taskInfo.done()
     }
 
     const exitEvents: Promise<any[]>[] = []
@@ -968,7 +967,7 @@ class ThreadPool {
   }
 }
 
-class Tinypool extends EventEmitterAsyncResource {
+class Tinypool extends EventEmitter {
   #pool: ThreadPool
 
   constructor(options: Options = {}) {
@@ -994,7 +993,7 @@ class Tinypool extends EventEmitterAsyncResource {
       )
     }
 
-    super({ ...options, name: 'Tinypool' })
+    super()
 
     if (
       options.minThreads !== undefined &&
