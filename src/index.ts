@@ -286,9 +286,13 @@ class TaskInfo implements Task {
     return ret
   }
 
-  done(): void {
+  done(err: unknown | null, result?: any): void {
     /* this.emitDestroy() // `TaskInfo`s are used only once.
     this.runInAsyncScope(this.callback, null, err, result) */
+    setTimeout(() => {
+      this.callback(err as Error, result)
+    })
+
     // If an abort signal was used, remove the listener from it when
     // done to make sure we do not accidentally leak.
     if (this.abortSignal && this.abortListener) {
@@ -452,7 +456,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     this.freeWorkerId()
     this.clearIdleTimeout()
     for (const taskInfo of this.taskInfos.values()) {
-      taskInfo.done()
+      taskInfo.done(Errors.ThreadTermination())
     }
     this.taskInfos.clear()
   }
@@ -500,7 +504,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     } catch (err) {
       // This would mostly happen if e.g. message contains unserializable data
       // or transferList is invalid.
-      taskInfo.done()
+      taskInfo.done(err)
       return
     }
 
@@ -643,7 +647,7 @@ class ThreadPool {
     })
 
     const onMessage = (message: ResponseMessage) => {
-      const { taskId } = message
+      const { taskId, result } = message
       // In case of success: Call the callback that was passed to `runTask`,
       // remove the `TaskInfo` associated with the Worker, which marks it as
       // free again.
@@ -659,7 +663,7 @@ class ThreadPool {
         )
         pool.publicInterface.emit('error', err)
       } else {
-        taskInfo.done()
+        taskInfo.done(message.error, result)
       }
 
       pool._processPendingMessages()
@@ -730,7 +734,7 @@ class ThreadPool {
 
       if (taskInfos.length > 0) {
         for (const taskInfo of taskInfos) {
-          taskInfo.done()
+          taskInfo.done(err, null)
         }
       } else {
         this.publicInterface.emit('error', err)
@@ -846,7 +850,6 @@ class ThreadPool {
         }
       },
       signal
-      // this.publicInterface.asyncResource.asyncId()
     )
 
     if (signal !== null) {
@@ -947,11 +950,11 @@ class ThreadPool {
   async destroy() {
     while (this.skipQueue.length > 0) {
       const taskInfo: TaskInfo = this.skipQueue.shift() as TaskInfo
-      taskInfo.done()
+      taskInfo.done(new Error('Terminating worker thread'))
     }
     while (this.taskQueue.size > 0) {
       const taskInfo: TaskInfo = this.taskQueue.shift() as TaskInfo
-      taskInfo.done()
+      taskInfo.done(new Error('Terminating worker thread'))
     }
 
     const exitEvents: Promise<any[]>[] = []

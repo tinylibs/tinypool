@@ -1,7 +1,7 @@
 import { resolve } from 'path'
 import { Bench } from 'tinybench'
 
-const bench = new Bench({ iterations: 10 })
+const bench = new Bench({ iterations: 100 })
 
 bench
   .add('tinybench@0.2.4 with async_hooks', async () => {
@@ -17,7 +17,7 @@ bench
     await worker.run(null)
   })
   .add('tinybench without async_hooks', async () => {
-    const { Tinypool } = await import('tinypool')
+    const { Tinypool } = await import('../dist/esm/index.js')
 
     const worker = new Tinypool({
       filename: resolve(__dirname, '../test/fixtures/simple-isworkerthread.js'),
