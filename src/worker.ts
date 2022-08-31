@@ -17,6 +17,7 @@ import {
   kTransferable,
   kValue,
 } from './common'
+import { stderr, stdout } from './utils'
 
 const [tinypoolPrivateData, workerData] = tinypoolData as TinypoolData
 
@@ -177,10 +178,10 @@ function onMessage(
       // before potentially entering the `Atomics.wait()` loop, and before
       // returning the result so that messages will always be printed even
       // if the process would otherwise be ready to exit.
-      if (process.stdout.writableLength > 0) {
+      if (stdout()?.writableLength! > 0) {
         await new Promise((resolve) => process.stdout.write('', resolve))
       }
-      if (process.stderr.writableLength > 0) {
+      if (stderr()?.writableLength! > 0) {
         await new Promise((resolve) => process.stderr.write('', resolve))
       }
     } catch (error) {
