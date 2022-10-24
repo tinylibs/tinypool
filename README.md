@@ -27,10 +27,8 @@ const pool = new Tinypool({
   filename: new URL('./worker.js', import.meta.url).href,
 })
 
-;(async function () {
-  const result = await pool.run({ a: 4, b: 6 })
-  console.log(result) // Prints 10
-})()
+const result = await pool.run({ a: 4, b: 6 })
+console.log(result) // Prints 10
 ```
 
 In `worker.js`:
