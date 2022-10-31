@@ -591,7 +591,7 @@ class ThreadPool {
     }
 
     this.workerIds = new Map(
-      new Array(options.maxThreads).fill(0).map((_, i) => [i + 1, true])
+      new Array(this.options.maxThreads).fill(0).map((_, i) => [i + 1, true])
     )
 
     this.workers = new AsynchronouslyCreatedResourcePool<WorkerInfo>(
