@@ -2,6 +2,7 @@ import EventEmitter from 'events'
 import { cpus } from 'os'
 import { dirname, resolve } from 'path'
 import Tinypool from 'tinypool'
+import { amount as cpuCount } from '../src/physicalCpuCount'
 import { fileURLToPath, pathToFileURL } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -263,3 +264,22 @@ test('workerId should never be duplicated', async () => {
   await pool.destroy()
   await sleep(5000)
 }, 30000)
+
+test('isolateWorkers: true with minThreads of 0 should not halt(#42)', async () => {
+  const minThreads = 0,
+    maxThreads = 6
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/isolated.js'),
+    minThreads,
+    maxThreads,
+    isolateWorkers: true,
+  })
+
+  console.log({ minThreads, maxThreads })
+
+  expect(await pool.run({})).toBe(0)
+  expect(await pool.run({})).toBe(0)
+  expect(await pool.run({})).toBe(0)
+  expect(await pool.run({})).toBe(0)
+  expect(await pool.run({})).toBe(0)
+})
