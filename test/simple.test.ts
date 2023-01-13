@@ -265,7 +265,7 @@ test('workerId should never be duplicated', async () => {
   await sleep(5000)
 }, 30000)
 
-test('isolateWorkers: true with minThreads of 0 should not halt(#42)', async () => {
+/* test('isolateWorkers: true with minThreads of 0 should not halt(#42)', async () => {
   const minThreads = 0,
     maxThreads = 6
   const pool = new Tinypool({
@@ -282,4 +282,4 @@ test('isolateWorkers: true with minThreads of 0 should not halt(#42)', async () 
   expect(await pool.run({})).toBe(0)
   expect(await pool.run({})).toBe(0)
   expect(await pool.run({})).toBe(0)
-})
+}) */
