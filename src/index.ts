@@ -450,7 +450,6 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   async destroy(): Promise<void> {
     await this.worker.terminate()
     this.port.close()
-    this.freeWorkerId()
     this.clearIdleTimeout()
     for (const taskInfo of this.taskInfos.values()) {
       taskInfo.done(Errors.ThreadTermination())
@@ -765,6 +764,8 @@ class ThreadPool {
   }
 
   _removeWorker(workerInfo: WorkerInfo): void {
+    workerInfo.freeWorkerId()
+
     workerInfo.destroy()
 
     this.workers.delete(workerInfo)

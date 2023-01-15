@@ -254,7 +254,7 @@ test('workerId should never be duplicated', async () => {
   await sleep(5000)
 }, 30000)
 
-/* test('isolateWorkers: true with minThreads of 0 should not halt(#42)', async () => {
+test('isolateWorkers: true with minThreads of 0 should not halt (#42)', async () => {
   const minThreads = 0,
     maxThreads = 6
   const pool = new Tinypool({
@@ -263,12 +263,10 @@ test('workerId should never be duplicated', async () => {
     maxThreads,
     isolateWorkers: true,
   })
-
-  console.log({ minThreads, maxThreads })
-
-  expect(await pool.run({})).toBe(0)
-  expect(await pool.run({})).toBe(0)
-  expect(await pool.run({})).toBe(0)
-  expect(await pool.run({})).toBe(0)
-  expect(await pool.run({})).toBe(0)
-}) */
+  // https://github.com/tinylibs/tinypool/pull/44#discussion_r1070169279
+  const promises = []
+  for (let i = 0; i < maxThreads + 1; i++) {
+    promises.push(pool.run({}))
+  }
+  await Promise.all(promises)
+})

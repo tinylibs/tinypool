@@ -1,5 +1,3 @@
-'use strict'
-
 import { promisify } from 'util'
 const sleep = promisify(setTimeout)
 
