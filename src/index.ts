@@ -602,6 +602,14 @@ class ThreadPool {
     this._ensureMinimumWorkers()
     this.startingUp = false
   }
+  _ensureEnoughWorkersForTaskQueue(): void {
+    while (
+      this.workers.size < this.taskQueue.size &&
+      this.workers.size < this.options.maxThreads
+    ) {
+      this._addNewWorker()
+    }
+  }
 
   _ensureMaximumWorkers(): void {
     while (this.workers.size < this.options.maxThreads) {
@@ -844,7 +852,7 @@ class ThreadPool {
         // When `isolateWorkers` is enabled, remove the worker after task is finished
         if (this.options.isolateWorkers && taskInfo.workerInfo) {
           this._removeWorker(taskInfo.workerInfo)
-          this._ensureMaximumWorkers()
+          this._ensureEnoughWorkersForTaskQueue()
         }
       },
       signal,
