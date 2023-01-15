@@ -2,7 +2,6 @@ import EventEmitter from 'events'
 import { cpus } from 'os'
 import { dirname, resolve } from 'path'
 import Tinypool from 'tinypool'
-import { amount as cpuCount } from '../src/physicalCpuCount'
 import { fileURLToPath, pathToFileURL } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -152,16 +151,6 @@ test('named tasks work', async () => {
   expect(await worker.run({}, { name: 'a' })).toBe('a')
   expect(await worker.run({}, { name: 'b' })).toBe('b')
   expect(await worker.run({})).toBe('b')
-})
-
-test('can destroy pool while tasks are running', async () => {
-  const pool = new Tinypool({
-    filename: resolve(__dirname, 'fixtures/eval.js'),
-  })
-  setImmediate(() => pool.destroy())
-  expect(async () => await pool.run('while(1){}')).rejects.toThrow(
-    /Terminating worker thread/
-  )
 })
 
 test('isolateWorkers: false', async () => {

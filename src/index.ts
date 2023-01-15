@@ -447,8 +447,8 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     )
   }
 
-  destroy(): void {
-    this.worker.terminate()
+  async destroy(): Promise<void> {
+    await this.worker.terminate()
     this.port.close()
     this.freeWorkerId()
     this.clearIdleTimeout()
