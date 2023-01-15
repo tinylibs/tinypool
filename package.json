@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --no-coverage --runInBand",
-    "test:dev": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch --no-coverage",
+    "test:dev": "node --experimental-vm-modules --trace-warnings node_modules/jest/bin/jest.js --watch --no-coverage",
     "dev": "tsup --watch",
     "build": "tsup",
     "publish": "clean-publish",
