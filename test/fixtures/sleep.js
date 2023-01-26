@@ -1,6 +1,4 @@
-'use strict'
-
-const { promisify } = require('util')
+import { promisify } from 'util'
 const sleep = promisify(setTimeout)
 
 const buf = new Uint32Array(new SharedArrayBuffer(4))

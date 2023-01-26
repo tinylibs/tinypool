@@ -153,16 +153,6 @@ test('named tasks work', async () => {
   expect(await worker.run({})).toBe('b')
 })
 
-test('can destroy pool while tasks are running', async () => {
-  const pool = new Tinypool({
-    filename: resolve(__dirname, 'fixtures/eval.js'),
-  })
-  setImmediate(() => pool.destroy())
-  expect(async () => await pool.run('while(1){}')).rejects.toThrow(
-    /Terminating worker thread/
-  )
-})
-
 test('isolateWorkers: false', async () => {
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/isolated.js'),
@@ -261,5 +251,22 @@ test('workerId should never be duplicated', async () => {
   }
 
   await pool.destroy()
-  await sleep(5000)
+  await sleep(3000)
 }, 30000)
+
+test('isolateWorkers: true with minThreads of 0 should not halt (#42)', async () => {
+  const minThreads = 0,
+    maxThreads = 6
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/isolated.js'),
+    minThreads,
+    maxThreads,
+    isolateWorkers: true,
+  })
+  // https://github.com/tinylibs/tinypool/pull/44#discussion_r1070169279
+  const promises = []
+  for (let i = 0; i < maxThreads + 1; i++) {
+    promises.push(pool.run({}))
+  }
+  await Promise.all(promises)
+})

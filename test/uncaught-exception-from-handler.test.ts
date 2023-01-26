@@ -2,6 +2,8 @@ import { dirname, resolve } from 'path'
 import { Tinypool } from 'tinypool'
 import { fileURLToPath } from 'url'
 import { once } from 'events'
+const sleep = async (num: number) =>
+  await new Promise((res) => setTimeout(res, num))
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -23,7 +25,7 @@ test('uncaught exception in immediate resets Worker', async () => {
   await expect(
     pool.run(`
     setImmediate(() => { throw new Error("not_caught") });
-    new Promise(() => {}) /* act as if we were doing some work */
+    new Promise(() => {}) // act as if we were doing some work
   `)
   ).rejects.toThrow(/not_caught/)
 })
@@ -59,6 +61,7 @@ test('using parentPort is treated as an error', async () => {
   await expect(
     pool.run(`
     (async () => {
+      console.log();
       const parentPort = (await import('worker_threads')).parentPort; 
       parentPort.postMessage("some message");
       new Promise(() => {}) /* act as if we were doing some work */

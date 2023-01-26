@@ -447,10 +447,9 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     )
   }
 
-  destroy(): void {
-    this.worker.terminate()
+  async destroy(): Promise<void> {
+    await this.worker.terminate()
     this.port.close()
-    this.freeWorkerId()
     this.clearIdleTimeout()
     for (const taskInfo of this.taskInfos.values()) {
       taskInfo.done(Errors.ThreadTermination())
@@ -602,6 +601,14 @@ class ThreadPool {
     this.startingUp = true
     this._ensureMinimumWorkers()
     this.startingUp = false
+  }
+  _ensureEnoughWorkersForTaskQueue(): void {
+    while (
+      this.workers.size < this.taskQueue.size &&
+      this.workers.size < this.options.maxThreads
+    ) {
+      this._addNewWorker()
+    }
   }
 
   _ensureMaximumWorkers(): void {
@@ -765,6 +772,8 @@ class ThreadPool {
   }
 
   _removeWorker(workerInfo: WorkerInfo): void {
+    workerInfo.freeWorkerId()
+
     workerInfo.destroy()
 
     this.workers.delete(workerInfo)
@@ -843,7 +852,7 @@ class ThreadPool {
         // When `isolateWorkers` is enabled, remove the worker after task is finished
         if (this.options.isolateWorkers && taskInfo.workerInfo) {
           this._removeWorker(taskInfo.workerInfo)
-          this._ensureMinimumWorkers()
+          this._ensureEnoughWorkersForTaskQueue()
         }
       },
       signal,
