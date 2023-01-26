@@ -251,7 +251,7 @@ test('workerId should never be duplicated', async () => {
   }
 
   await pool.destroy()
-  await sleep(5000)
+  await sleep(3000)
 }, 30000)
 
 test('isolateWorkers: true with minThreads of 0 should not halt (#42)', async () => {
