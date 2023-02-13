@@ -20,7 +20,6 @@ _In case you need more tiny libraries like tinypool or tinyspy, please consider 
 In `main.js`:
 
 ```js
-import path from 'path'
 import Tinypool from 'tinypool'
 
 const pool = new Tinypool({
