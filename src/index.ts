@@ -688,6 +688,7 @@ class ThreadPool {
     }
 
     const message: StartupMessage = {
+      tinypoolStartupMessage: true,
       filename: this.options.filename,
       name: this.options.name,
       port: port2,
