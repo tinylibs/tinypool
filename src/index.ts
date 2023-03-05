@@ -122,6 +122,7 @@ interface Options {
   minThreads?: number
   maxThreads?: number
   idleTimeout?: number
+  terminateTimeout?: number
   maxQueue?: number | 'auto'
   concurrentTasksPerWorker?: number
   useAtomics?: boolean
@@ -447,14 +448,38 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     )
   }
 
-  async destroy(): Promise<void> {
-    await this.worker.terminate()
-    this.port.close()
-    this.clearIdleTimeout()
-    for (const taskInfo of this.taskInfos.values()) {
-      taskInfo.done(Errors.ThreadTermination())
-    }
-    this.taskInfos.clear()
+  async destroy(timeout?: number): Promise<void> {
+    let resolve: () => void
+    let reject: (err: Error) => void
+
+    const ret = new Promise<void>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+
+    const timer = timeout
+      ? setTimeout(
+          () => reject(new Error('Failed to terminate worker')),
+          timeout
+        )
+      : null
+
+    this.worker.terminate().then(() => {
+      if (timer !== null) {
+        clearTimeout(timer)
+      }
+
+      this.port.close()
+      this.clearIdleTimeout()
+      for (const taskInfo of this.taskInfos.values()) {
+        taskInfo.done(Errors.ThreadTermination())
+      }
+      this.taskInfos.clear()
+
+      resolve()
+    })
+
+    return ret
   }
 
   clearIdleTimeout(): void {
@@ -771,12 +796,12 @@ class ThreadPool {
     }
   }
 
-  _removeWorker(workerInfo: WorkerInfo): void {
+  _removeWorker(workerInfo: WorkerInfo): Promise<void> {
     workerInfo.freeWorkerId()
 
-    workerInfo.destroy()
-
     this.workers.delete(workerInfo)
+
+    return workerInfo.destroy(this.options.terminateTimeout)
   }
 
   _onWorkerAvailable(workerInfo: WorkerInfo): void {
@@ -845,14 +870,16 @@ class ThreadPool {
         this.completed++
         if (err !== null) {
           reject(err)
-        } else {
-          resolve(result)
         }
 
         // When `isolateWorkers` is enabled, remove the worker after task is finished
         if (this.options.isolateWorkers && taskInfo.workerInfo) {
           this._removeWorker(taskInfo.workerInfo)
-          this._ensureEnoughWorkersForTaskQueue()
+            .then(() => this._ensureEnoughWorkersForTaskQueue())
+            .then(() => resolve(result))
+            .catch(reject)
+        } else {
+          resolve(result)
         }
       },
       signal,
