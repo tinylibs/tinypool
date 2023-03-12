@@ -1,9 +1,9 @@
-'use strict'
-const { Piscina } = require('..')
-const { resolve } = require('path')
+import Tinypool from '../dist/esm/index.js'
 
 async function simpleBenchmark({ duration = 10000 } = {}) {
-  const pool = new Piscina({ filename: resolve(__dirname, 'fixtures/add.js') })
+  const pool = new Tinypool({
+    filename: new URL('./fixtures/add.mjs', import.meta.url).href,
+  })
   let done = 0
 
   const results = []
@@ -14,7 +14,7 @@ async function simpleBenchmark({ duration = 10000 } = {}) {
 
   async function scheduleTasks() {
     while ((process.hrtime.bigint() - start) / 1_000_000n < duration) {
-      await pool.runTask({ a: 4, b: 6 })
+      await pool.run({ a: 4, b: 6 })
       done++
     }
   }
@@ -24,6 +24,5 @@ async function simpleBenchmark({ duration = 10000 } = {}) {
   return (done / duration) * 1e3
 }
 
-simpleBenchmark().then((opsPerSecond) => {
-  console.log(`opsPerSecond: ${opsPerSecond}`)
-})
+const opsPerSecond = await simpleBenchmark()
+console.log(`opsPerSecond: ${opsPerSecond}`)
