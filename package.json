@@ -1,6 +1,6 @@
 {
   "name": "tinypool",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "A minimal and tiny Node.js Worker Thread Pool implementation, a fork of piscina, but with fewer features",
   "type": "module",
   "main": "./dist/esm/index.js",
