@@ -54,6 +54,16 @@ We have a similar API to Piscina, so for more information, you can read Piscina'
 | <a href="https://github.com/Aslemammad"> <img width='150' src="https://avatars.githubusercontent.com/u/37929992?v=4" /><br> Mohammad Bagher </a> |
 | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 
+## Sponsors
+
+Your sponsorship can make a huge difference in continuing our work in open source!
+
+<p align="center">
+  <a href="https://cdn.jsdelivr.net/gh/aslemammad/static/sponsors.svg">
+    <img src='https://cdn.jsdelivr.net/gh/aslemammad/static/sponsors.svg'/>
+  </a>
+</p>
+
 ## Credits
 
 [The Vitest team](https://vitest.dev/) for giving me the chance of creating and maintaing this project for vitest.
