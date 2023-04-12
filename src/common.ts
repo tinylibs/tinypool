@@ -70,6 +70,7 @@ export interface Transferable {
 
 export interface Task {
   readonly [kQueueOptions]: object | null
+  cancel(): void
 }
 
 export interface TaskQueue {
@@ -77,6 +78,7 @@ export interface TaskQueue {
   shift(): Task | null
   remove(task: Task): void
   push(task: Task): void
+  cancel(): void
 }
 
 export function isTaskQueue(value: any): boolean {

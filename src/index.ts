@@ -83,6 +83,16 @@ class AbortError extends Error {
   }
 }
 
+class CancelError extends Error {
+  constructor() {
+    super('The task has been cancelled')
+  }
+
+  get name() {
+    return 'CancelError'
+  }
+}
+
 type ResourceLimits = Worker extends {
   resourceLimits?: infer T
 }
@@ -113,6 +123,13 @@ class ArrayTaskQueue implements TaskQueue {
     const index = this.tasks.indexOf(task)
     assert.notStrictEqual(index, -1)
     this.tasks.splice(index, 1)
+  }
+
+  cancel(): void {
+    while (this.tasks.length > 0) {
+      const task = this.tasks.pop()
+      task?.cancel()
+    }
   }
 }
 
@@ -245,6 +262,7 @@ class TaskInfo extends AsyncResource implements Task {
   workerInfo: WorkerInfo | null = null
   created: number
   started: number
+  cancel: () => void
 
   constructor(
     task: any,
@@ -259,6 +277,7 @@ class TaskInfo extends AsyncResource implements Task {
     this.callback = callback
     this.task = task
     this.transferList = transferList
+    this.cancel = () => this.callback(new CancelError(), null)
 
     // If the task is a Transferable returned by
     // Tinypool.move(), then add it to the transferList
@@ -1070,6 +1089,11 @@ class Tinypool extends EventEmitterAsyncResource {
   get queueSize(): number {
     const pool = this.#pool
     return Math.max(pool.taskQueue.size - pool.pendingCapacity(), 0)
+  }
+
+  cancelPendingTasks() {
+    const pool = this.#pool
+    pool.taskQueue.cancel()
   }
 
   get completed(): number {
