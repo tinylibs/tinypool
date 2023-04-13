@@ -42,12 +42,20 @@ export default ({ a, b }) => {
 
 We have a similar API to Piscina, so for more information, you can read Piscina's detailed [documentation](https://github.com/piscinajs/piscina#piscina---the-nodejs-worker-pool) and apply the same techniques here.
 
-###### Additional Options
+### Tinypool specific APIs
+
+#### Pool constructor options
 
 - `isolateWorkers`: Default to `false`. Always starts with a fresh worker when running tasks to isolate the environment.
-- `workerId`: Each worker now has an id ( <= `maxThreads`) that can be imported
-  from `tinypool` in the worker itself (or `process.__tinypool_state__.workerId`)
 - `terminateTimeout`: Defaults to `null`. If terminating a worker takes `terminateTimeout` amount of milliseconds to execute, an error is raised.
+
+#### Pool methods
+
+- `cancelPendingTasks()`: Gracefully cancels all pending tasks without stopping or interfering with on-going tasks. This method is useful when your tasks may have side effects and should not be terminated forcefully during task execution. If your tasks don't have any side effects you may want to use [`{ signal }`](https://github.com/piscinajs/piscina#cancelable-tasks) option for forcefully terminating all tasks, including the on-going ones, instead.
+
+#### Exports
+
+- `workerId`: Each worker now has an id ( <= `maxThreads`) that can be imported from `tinypool` in the worker itself (or `process.__tinypool_state__.workerId`).
 
 ## Authors
 

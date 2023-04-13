@@ -260,3 +260,51 @@ test('custom task queue works', async () => {
   expect(pushCalled).toBeTruthy()
   expect(shiftCalled).toBeTruthy()
 })
+
+test('queued tasks can be cancelled', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/sleep.js'),
+    minThreads: 0,
+    maxThreads: 1,
+  })
+
+  const time = 500
+  const taskCount = 10
+
+  const promises = []
+  let finishedTasks = 0
+  let cancelledTasks = 0
+
+  for (const _ of Array(taskCount)) {
+    const promise = pool
+      .run({ time })
+      .then(() => {
+        finishedTasks++
+      })
+      .catch((error) => {
+        if (error.message !== 'The task has been cancelled') {
+          throw error
+        }
+        cancelledTasks++
+      })
+    promises.push(promise)
+  }
+
+  // Wait for the first task to start
+  await new Promise((resolve) => setTimeout(resolve, time / 2))
+  expect(pool.queueSize).toBe(taskCount - 1)
+
+  // One task is running, cancel the pending ones
+  pool.cancelPendingTasks()
+
+  // The first task should still be on-going, pending ones should have started their cancellation
+  expect(finishedTasks).toBe(0)
+  expect(pool.queueSize).toBe(0)
+
+  await Promise.all(promises)
+
+  expect({ finishedTasks, cancelledTasks }).toEqual({
+    finishedTasks: 1,
+    cancelledTasks: taskCount - 1,
+  })
+})
