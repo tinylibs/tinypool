@@ -144,6 +144,7 @@ interface Options {
   concurrentTasksPerWorker?: number
   useAtomics?: boolean
   resourceLimits?: ResourceLimits
+  maxMemoryLimitBeforeRecycle?: number
   argv?: string[]
   execArgv?: string[]
   env?: EnvSpecifier
@@ -443,6 +444,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   port: MessagePort
   sharedBuffer: Int32Array
   lastSeenResponseCount: number = 0
+  usedMemory?: number
   onMessage: ResponseCallback
 
   constructor(
@@ -521,6 +523,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   }
 
   _handleResponse(message: ResponseMessage): void {
+    this.usedMemory = message.usedMemory
     this.onMessage(message)
 
     if (this.taskInfos.size === 0) {
@@ -892,8 +895,18 @@ class ThreadPool {
         }
 
         // When `isolateWorkers` is enabled, remove the worker after task is finished
-        if (this.options.isolateWorkers && taskInfo.workerInfo) {
-          this._removeWorker(taskInfo.workerInfo)
+        const shouldIsolateWorker =
+          this.options.isolateWorkers && taskInfo.workerInfo
+
+        // When `maxMemoryLimitBeforeRecycle` is enabled, remove workers that have exceeded the memory limit
+        const shouldRecycleWorker =
+          !this.options.isolateWorkers &&
+          this.options.maxMemoryLimitBeforeRecycle !== undefined &&
+          (taskInfo.workerInfo?.usedMemory || 0) >
+            this.options.maxMemoryLimitBeforeRecycle
+
+        if (shouldIsolateWorker || shouldRecycleWorker) {
+          this._removeWorker(taskInfo.workerInfo!)
             .then(() => this._ensureMinimumWorkers())
             .then(() => this._ensureEnoughWorkersForTaskQueue())
             .then(() => resolve(result))
