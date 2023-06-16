@@ -212,6 +212,29 @@ test('workerId should never be more than maxThreads', async () => {
   await sleep(300)
 })
 
+test('worker count should never be below minThreads when using isolateWorkers', async () => {
+  const minThreads = 4
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/workerId.js'),
+    isolateWorkers: true,
+    minThreads,
+  })
+  await pool.run({})
+  expect(pool.threads.length).toBe(minThreads)
+  await pool.run({})
+  expect(pool.threads.length).toBe(minThreads)
+  await pool.run({})
+  expect(pool.threads.length).toBe(minThreads)
+  await pool.run({})
+  expect(pool.threads.length).toBe(minThreads)
+  await pool.run({})
+  expect(pool.threads.length).toBe(minThreads)
+  await pool.run({})
+  expect(pool.threads.length).toBe(minThreads)
+
+  await sleep(300)
+})
+
 test('workerId should never be duplicated', async () => {
   const maxThreads = cpus().length + 4
   // console.log('maxThreads', maxThreads)

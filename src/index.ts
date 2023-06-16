@@ -894,6 +894,7 @@ class ThreadPool {
         // When `isolateWorkers` is enabled, remove the worker after task is finished
         if (this.options.isolateWorkers && taskInfo.workerInfo) {
           this._removeWorker(taskInfo.workerInfo)
+            .then(() => this._ensureMinimumWorkers())
             .then(() => this._ensureEnoughWorkersForTaskQueue())
             .then(() => resolve(result))
             .catch(reject)
