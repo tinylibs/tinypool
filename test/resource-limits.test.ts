@@ -8,7 +8,6 @@ test('resourceLimits causes task to reject', async () => {
   const worker = new Tinypool({
     filename: resolve(__dirname, 'fixtures/resource-limits.js'),
     resourceLimits: {
-
       maxOldGenerationSizeMb: 4,
       maxYoungGenerationSizeMb: 2,
       codeRangeSizeMb: 4,
@@ -35,4 +34,43 @@ test('resourceLimits causes task to reject', async () => {
   expect(worker.run(null)).rejects.toThrow(
     /Worker terminated due to reaching memory limit: JS heap out of memory/
   )
+})
+
+test('worker is recycled after reaching maxMemoryLimitBeforeRecycle', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/leak-memory.js'),
+    maxMemoryLimitBeforeRecycle: 10_000_000,
+    isolateWorkers: false,
+    minThreads: 1,
+    maxThreads: 1,
+  })
+
+  const originalWorkerId = pool.threads[0]?.threadId
+  expect(originalWorkerId).toBeGreaterThan(0)
+
+  let finalThreadId = originalWorkerId
+  let rounds = 0
+
+  // This is just an estimate of how to leak "some" memory - it's not accurate.
+  // Running 100 loops should be enough to make the worker reach memory limit and be recycled.
+  // Use the `rounds` to make sure we don't reach the limit on the first round.
+  for (const _ of Array(100).fill(0)) {
+    await pool.run(10_000)
+
+    if (pool.threads[0]) {
+      finalThreadId = pool.threads[0].threadId
+    }
+
+    if (finalThreadId !== originalWorkerId) {
+      break
+    }
+
+    rounds++
+  }
+
+  // Test setup should not reach max memory on first round
+  expect(rounds).toBeGreaterThan(1)
+
+  // Thread should have been recycled
+  expect(finalThreadId).not.toBe(originalWorkerId)
 })

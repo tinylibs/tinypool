@@ -23,6 +23,7 @@ export interface ResponseMessage {
   taskId: number
   result: any
   error: unknown | null
+  usedMemory: number
 }
 
 export interface TinypoolPrivateData {

@@ -46,8 +46,9 @@ We have a similar API to Piscina, so for more information, you can read Piscina'
 
 #### Pool constructor options
 
-- `isolateWorkers`: Default to `false`. Always starts with a fresh worker when running tasks to isolate the environment.
-- `terminateTimeout`: Defaults to `null`. If terminating a worker takes `terminateTimeout` amount of milliseconds to execute, an error is raised.
+- `isolateWorkers`: Disabled by default. Always starts with a fresh worker when running tasks to isolate the environment.
+- `terminateTimeout`: Disabled by default. If terminating a worker takes `terminateTimeout` amount of milliseconds to execute, an error is raised.
+- `maxMemoryLimitBeforeRecycle`: Disabled by default. When defined, the worker's heap memory usage is compared against this value after task has been finished. If the current memory usage exceeds this limit, worker is terminated and a new one is started to take its place. This option is useful when your tasks leak memory and you don't want to enable `isolateWorkers` option.
 
 #### Pool methods
 
