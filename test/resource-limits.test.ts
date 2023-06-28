@@ -74,3 +74,20 @@ test('worker is recycled after reaching maxMemoryLimitBeforeRecycle', async () =
   // Thread should have been recycled
   expect(finalThreadId).not.toBe(originalWorkerId)
 })
+
+test('recycled workers should not crash pool (regression)', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/leak-memory.js'),
+    maxMemoryLimitBeforeRecycle: 10,
+    isolateWorkers: false,
+    minThreads: 2,
+    maxThreads: 2,
+  })
+
+  // This should not crash the pool
+  await Promise.all(
+    Array(10)
+      .fill(0)
+      .map(() => pool.run(10_000))
+  )
+})
