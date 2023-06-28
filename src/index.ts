@@ -705,7 +705,10 @@ class ThreadPool {
       const taskInfo = workerInfo.taskInfos.get(taskId)
       workerInfo.taskInfos.delete(taskId)
 
-      if (!this.options.isolateWorkers) pool.workers.maybeAvailable(workerInfo)
+      // Mark worker as available if it's not about to be removed
+      if (!this.shouldRecycleWorker(taskInfo)) {
+        pool.workers.maybeAvailable(workerInfo)
+      }
 
       /* istanbul ignore if */
       if (taskInfo === undefined) {
@@ -894,18 +897,7 @@ class ThreadPool {
           reject(err)
         }
 
-        // When `isolateWorkers` is enabled, remove the worker after task is finished
-        const shouldIsolateWorker =
-          this.options.isolateWorkers && taskInfo.workerInfo
-
-        // When `maxMemoryLimitBeforeRecycle` is enabled, remove workers that have exceeded the memory limit
-        const shouldRecycleWorker =
-          !this.options.isolateWorkers &&
-          this.options.maxMemoryLimitBeforeRecycle !== undefined &&
-          (taskInfo.workerInfo?.usedMemory || 0) >
-            this.options.maxMemoryLimitBeforeRecycle
-
-        if (shouldIsolateWorker || shouldRecycleWorker) {
+        if (this.shouldRecycleWorker(taskInfo)) {
           this._removeWorker(taskInfo.workerInfo!)
             .then(() => this._ensureMinimumWorkers())
             .then(() => this._ensureEnoughWorkersForTaskQueue())
@@ -1000,6 +992,20 @@ class ThreadPool {
     this._maybeDrain()
 
     return ret
+  }
+
+  shouldRecycleWorker(taskInfo?: TaskInfo): boolean {
+    // When `isolateWorkers` is enabled, remove the worker after task is finished
+    const isWorkerIsolated = this.options.isolateWorkers && taskInfo?.workerInfo
+
+    // When `maxMemoryLimitBeforeRecycle` is enabled, remove workers that have exceeded the memory limit
+    const isWorkersMemoryLimitReached =
+      !this.options.isolateWorkers &&
+      this.options.maxMemoryLimitBeforeRecycle !== undefined &&
+      (taskInfo?.workerInfo?.usedMemory || 0) >
+        this.options.maxMemoryLimitBeforeRecycle
+
+    return Boolean(isWorkerIsolated || isWorkersMemoryLimitReached)
   }
 
   pendingCapacity(): number {
