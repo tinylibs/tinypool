@@ -446,6 +446,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   lastSeenResponseCount: number = 0
   usedMemory?: number
   onMessage: ResponseCallback
+  shouldRecycle?: boolean
 
   constructor(
     worker: Worker,
@@ -995,17 +996,27 @@ class ThreadPool {
   }
 
   shouldRecycleWorker(taskInfo?: TaskInfo): boolean {
+    // Worker could be set to recycle by pool's imperative methods
+    if (taskInfo?.workerInfo?.shouldRecycle) {
+      return true
+    }
+
     // When `isolateWorkers` is enabled, remove the worker after task is finished
-    const isWorkerIsolated = this.options.isolateWorkers && taskInfo?.workerInfo
+    if (this.options.isolateWorkers && taskInfo?.workerInfo) {
+      return true
+    }
 
     // When `maxMemoryLimitBeforeRecycle` is enabled, remove workers that have exceeded the memory limit
-    const isWorkersMemoryLimitReached =
+    if (
       !this.options.isolateWorkers &&
       this.options.maxMemoryLimitBeforeRecycle !== undefined &&
       (taskInfo?.workerInfo?.usedMemory || 0) >
         this.options.maxMemoryLimitBeforeRecycle
+    ) {
+      return true
+    }
 
-    return Boolean(isWorkerIsolated || isWorkersMemoryLimitReached)
+    return false
   }
 
   pendingCapacity(): number {
@@ -1040,6 +1051,33 @@ class ThreadPool {
     }
 
     await Promise.all(exitEvents)
+  }
+
+  async recycleWorkers() {
+    // Worker's are automatically recycled when isolateWorkers is enabled
+    if (this.options.isolateWorkers) {
+      return
+    }
+
+    const exitEvents: Promise<any[]>[] = []
+
+    Array.from(this.workers).filter((workerInfo) => {
+      // Remove idle workers
+      if (workerInfo.currentUsage() === 0) {
+        exitEvents.push(once(workerInfo!.worker, 'exit'))
+        this._removeWorker(workerInfo!)
+      }
+      // Mark on-going workers for recycling.
+      // Note that we don't need to wait for these ones to finish
+      // as pool.shouldRecycleWorker will do it once task has finished
+      else {
+        workerInfo.shouldRecycle = true
+      }
+    })
+
+    await Promise.all(exitEvents)
+
+    this._ensureMinimumWorkers()
   }
 }
 
@@ -1114,6 +1152,10 @@ class Tinypool extends EventEmitterAsyncResource {
   cancelPendingTasks() {
     const pool = this.#pool
     pool.taskQueue.cancel()
+  }
+
+  async recycleWorkers() {
+    await this.#pool.recycleWorkers()
   }
 
   get completed(): number {
