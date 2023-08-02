@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aslemammad/tinypool.git"
+    "url": "git+https://github.com/tinylibs/tinypool.git"
   },
   "keywords": [
     "fast",
@@ -55,9 +55,9 @@
     "vite": "^2.7.3"
   },
   "bugs": {
-    "url": "https://github.com/aslemammad/tinypool/issues"
+    "url": "https://github.com/tinylibs/tinypool/issues"
   },
-  "homepage": "https://github.com/aslemammad/tinypool#readme",
+  "homepage": "https://github.com/tinylibs/tinypool#readme",
   "engines": {
     "node": ">=14.0.0"
   },
