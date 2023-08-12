@@ -1,4 +1,46 @@
-import type { MessagePort } from 'worker_threads'
+import type { MessagePort, TransferListItem } from 'worker_threads'
+
+/** Channel for communicating between main thread and workers */
+export interface TinypoolChannel {
+  /** Workers subscribing to messages */
+  onMessage(callback: (message: any) => void): void
+
+  /** Called with worker's messages */
+  postMessage(message: any): void
+}
+
+export interface TinypoolWorker {
+  runtime: string
+  initialize(options: {
+    env?: Record<string, string>
+    argv?: string[]
+    execArgv?: string[]
+    resourceLimits?: any
+    workerData?: TinypoolData
+    trackUnmanagedFds?: boolean
+  }): void
+  terminate(): Promise<any>
+  postMessage(message: any, transferListItem?: TransferListItem[]): void
+  setChannel?: (channel: TinypoolChannel) => void
+  on(event: string, listener: (...args: any[]) => void): void
+  once(event: string, listener: (...args: any[]) => void): void
+  emit(event: string, ...data: any[]): void
+  ref?: () => void
+  unref?: () => void
+  threadId: number
+}
+
+/**
+ * Tinypool's internal messaging between main thread and workers.
+ * - Utilizers can use `__tinypool_worker_message__` property to identify
+ *   these messages and ignore them.
+ */
+export interface TinypoolWorkerMessage<
+  T extends 'port' | 'pool' = 'port' | 'pool'
+> {
+  __tinypool_worker_message__: true
+  source: T
+}
 
 export interface StartupMessage {
   filename: string | null

@@ -1,3 +1,6 @@
+/** Enable to see memory leak logging */
+const logOutput = false
+
 export let leaks = []
 
 /**
@@ -13,5 +16,7 @@ export default function run(bytes) {
   const after = process.memoryUsage().heapUsed
   const diff = after - before
 
-  console.log(`Leaked: ${diff}. Heap used: ${process.memoryUsage().heapUsed}`)
+  if (logOutput) {
+    console.log(`Leaked: ${diff}. Heap used: ${process.memoryUsage().heapUsed}`)
+  }
 }
