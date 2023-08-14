@@ -1,6 +1,7 @@
 import type { MessagePort } from 'worker_threads'
 
 export interface StartupMessage {
+  tinypoolStartupMessage: true
   filename: string | null
   name: string
   port: MessagePort

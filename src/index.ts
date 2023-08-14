@@ -3,6 +3,7 @@ import {
   MessageChannel,
   MessagePort,
   receiveMessageOnPort,
+  parentPort,
 } from 'worker_threads'
 import { once } from 'events'
 import EventEmitterAsyncResource from './EventEmitterAsyncResource'
@@ -739,6 +740,7 @@ class ThreadPool {
     }
 
     const message: StartupMessage = {
+      tinypoolStartupMessage: true,
       filename: this.options.filename,
       name: this.options.name,
       port: port2,
@@ -1128,6 +1130,12 @@ class Tinypool extends EventEmitterAsyncResource {
     return this.#pool.runTask(task, { transferList, filename, name, signal })
   }
 
+  broadcastMessage(message: any) {
+    for (const workerInfo of this.#pool.workers) {
+      workerInfo.worker.postMessage(message)
+    }
+  }
+
   destroy() {
     return this.#pool.destroy()
   }
@@ -1212,6 +1220,14 @@ class Tinypool extends EventEmitterAsyncResource {
 
   static get queueOptionsSymbol() {
     return kQueueOptions
+  }
+}
+
+export function onBroadcastedMessage(handler: (message: any) => void) {
+  if (parentPort) {
+    parentPort.on('message', handler)
+  } else {
+    throw new Error('onBroadcastedMessage can only be used in worker threads')
   }
 }
 

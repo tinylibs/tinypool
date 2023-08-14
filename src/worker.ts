@@ -101,6 +101,7 @@ async function getHandler(
 parentPort!.on('message', (message: StartupMessage) => {
   useAtomics =
     process.env.PISCINA_DISABLE_ATOMICS === '1' ? false : message.useAtomics
+  if (!message?.tinypoolStartupMessage) return
   const { port, sharedBuffer, filename, name } = message
   ;(async function () {
     if (filename !== null) {
