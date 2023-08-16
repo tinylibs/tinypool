@@ -73,6 +73,7 @@
       ".ts"
     ],
     "testRegex": "test.(js|ts|tsx)$",
+    "verbose": true,
     "coverageDirectory": "./coverage/",
     "collectCoverage": true,
     "coverageReporters": [

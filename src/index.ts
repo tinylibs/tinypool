@@ -1,5 +1,4 @@
 import {
-  Worker,
   MessageChannel,
   MessagePort,
   receiveMessageOnPort,
@@ -8,7 +7,7 @@ import { once } from 'events'
 import EventEmitterAsyncResource from './EventEmitterAsyncResource'
 import { AsyncResource } from 'async_hooks'
 import { fileURLToPath, URL } from 'url'
-import { dirname, join, resolve } from 'path'
+import { join } from 'path'
 import { inspect, types } from 'util'
 import assert from 'assert'
 import { performance } from 'perf_hooks'
@@ -32,13 +31,19 @@ import {
   kTransferable,
   kValue,
   TinypoolData,
+  TinypoolWorker,
+  TinypoolChannel,
 } from './common'
+import ThreadWorker from './runtime/thread-worker'
+import ProcessWorker from './runtime/process-worker'
 
 declare global {
   namespace NodeJS {
     interface Process {
       __tinypool_state__: {
-        isWorkerThread: boolean
+        isTinypoolWorker: boolean
+        isWorkerThread?: boolean
+        isChildProcess?: boolean
         workerData: any
         workerId: number
       }
@@ -98,11 +103,6 @@ type ResourceLimits = Worker extends {
 }
   ? T
   : {}
-type EnvSpecifier = typeof Worker extends {
-  new (filename: never, options?: { env: infer T }): Worker
-}
-  ? T
-  : never
 
 class ArrayTaskQueue implements TaskQueue {
   tasks: Task[] = []
@@ -135,6 +135,7 @@ class ArrayTaskQueue implements TaskQueue {
 
 interface Options {
   filename?: string | null
+  runtime?: 'worker_threads' | 'child_process'
   name?: string
   minThreads?: number
   maxThreads?: number
@@ -147,7 +148,7 @@ interface Options {
   maxMemoryLimitBeforeRecycle?: number
   argv?: string[]
   execArgv?: string[]
-  env?: EnvSpecifier
+  env?: Record<string, string>
   workerData?: any
   taskQueue?: TaskQueue
   trackUnmanagedFds?: boolean
@@ -157,6 +158,7 @@ interface Options {
 interface FilledOptions extends Options {
   filename: string | null
   name: string
+  runtime: NonNullable<Options['runtime']>
   minThreads: number
   maxThreads: number
   idleTimeout: number
@@ -169,6 +171,7 @@ interface FilledOptions extends Options {
 const kDefaultOptions: FilledOptions = {
   filename: null,
   name: 'default',
+  runtime: 'worker_threads',
   minThreads: Math.max(cpuCount / 2, 1),
   maxThreads: cpuCount,
   idleTimeout: 0,
@@ -181,9 +184,11 @@ const kDefaultOptions: FilledOptions = {
 
 interface RunOptions {
   transferList?: TransferList
+  channel?: TinypoolChannel
   filename?: string | null
   signal?: AbortSignalAny | null
   name?: string | null
+  runtime?: Options['runtime']
 }
 
 interface FilledRunOptions extends RunOptions {
@@ -255,6 +260,7 @@ class TaskInfo extends AsyncResource implements Task {
   callback: TaskCallback
   task: any
   transferList: TransferList
+  channel?: TinypoolChannel
   filename: string
   name: string
   taskId: number
@@ -272,13 +278,15 @@ class TaskInfo extends AsyncResource implements Task {
     name: string,
     callback: TaskCallback,
     abortSignal: AbortSignalAny | null,
-    triggerAsyncId: number
+    triggerAsyncId: number,
+    channel?: TinypoolChannel
   ) {
     super('Tinypool.Task', { requireManualDestroy: true, triggerAsyncId })
     this.callback = callback
     this.task = task
     this.transferList = transferList
     this.cancel = () => this.callback(new CancelError(), null)
+    this.channel = channel
 
     // If the task is a Transferable returned by
     // Tinypool.move(), then add it to the transferList
@@ -436,7 +444,7 @@ const Errors = {
 }
 
 class WorkerInfo extends AsynchronouslyCreatedResource {
-  worker: Worker
+  worker: TinypoolWorker
   workerId: number
   freeWorkerId: () => void
   taskInfos: Map<number, TaskInfo>
@@ -449,7 +457,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   shouldRecycle?: boolean
 
   constructor(
-    worker: Worker,
+    worker: TinypoolWorker,
     port: MessagePort,
     workerId: number,
     freeWorkerId: () => void,
@@ -544,6 +552,9 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     }
 
     try {
+      if (taskInfo.channel) {
+        this.worker.setChannel?.(taskInfo.channel)
+      }
       this.port.postMessage(message, taskInfo.transferList)
     } catch (err) {
       // This would mostly happen if e.g. message contains unserializable data
@@ -674,7 +685,6 @@ class ThreadPool {
   _addNewWorker(): void {
     const pool = this
     const workerIds = this.workerIds
-    const __dirname = dirname(fileURLToPath(import.meta.url))
 
     let workerId: number
 
@@ -686,7 +696,12 @@ class ThreadPool {
     })
     const tinypoolPrivateData = { workerId: workerId! }
 
-    const worker = new Worker(resolve(__dirname, './worker.js'), {
+    const worker =
+      this.options.runtime === 'child_process'
+        ? new ProcessWorker()
+        : new ThreadWorker()
+
+    worker.initialize({
       env: this.options.env,
       argv: this.options.argv,
       execArgv: this.options.execArgv,
@@ -868,7 +883,8 @@ class ThreadPool {
 
   runTask(task: any, options: RunOptions): Promise<any> {
     let { filename, name } = options
-    const { transferList = [], signal = null } = options
+    const { transferList = [], signal = null, channel } = options
+
     if (filename == null) {
       filename = this.options.filename
     }
@@ -909,7 +925,8 @@ class ThreadPool {
         }
       },
       signal,
-      this.publicInterface.asyncResource.asyncId()
+      this.publicInterface.asyncResource.asyncId(),
+      channel
     )
 
     if (signal !== null) {
@@ -1053,7 +1070,11 @@ class ThreadPool {
     await Promise.all(exitEvents)
   }
 
-  async recycleWorkers() {
+  async recycleWorkers(options: Pick<Options, 'runtime'> = {}) {
+    if (options?.runtime) {
+      this.options.runtime = options.runtime
+    }
+
     // Worker's are automatically recycled when isolateWorkers is enabled
     if (this.options.isolateWorkers) {
       return
@@ -1064,7 +1085,8 @@ class ThreadPool {
     Array.from(this.workers).filter((workerInfo) => {
       // Remove idle workers
       if (workerInfo.currentUsage() === 0) {
-        exitEvents.push(once(workerInfo!.worker, 'exit'))
+        // @ts-ignore
+        exitEvents.push(once(workerInfo.worker, 'exit'))
         this._removeWorker(workerInfo!)
       }
       // Mark on-going workers for recycling.
@@ -1123,9 +1145,16 @@ class Tinypool extends EventEmitterAsyncResource {
   }
 
   run(task: any, options: RunOptions = kDefaultRunOptions) {
-    const { transferList, filename, name, signal } = options
+    const { transferList, filename, name, signal, runtime, channel } = options
 
-    return this.#pool.runTask(task, { transferList, filename, name, signal })
+    return this.#pool.runTask(task, {
+      transferList,
+      filename,
+      name,
+      signal,
+      runtime,
+      channel,
+    })
   }
 
   destroy() {
@@ -1136,8 +1165,8 @@ class Tinypool extends EventEmitterAsyncResource {
     return this.#pool.options
   }
 
-  get threads(): Worker[] {
-    const ret: Worker[] = []
+  get threads(): TinypoolWorker[] {
+    const ret: TinypoolWorker[] = []
     for (const workerInfo of this.#pool.workers) {
       ret.push(workerInfo.worker)
     }
@@ -1154,8 +1183,8 @@ class Tinypool extends EventEmitterAsyncResource {
     pool.taskQueue.cancel()
   }
 
-  async recycleWorkers() {
-    await this.#pool.recycleWorkers()
+  async recycleWorkers(options: Pick<Options, 'runtime'> = {}) {
+    await this.#pool.recycleWorkers(options)
   }
 
   get completed(): number {

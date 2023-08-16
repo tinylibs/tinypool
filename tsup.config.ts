@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entryPoints: ['src/index.ts', 'src/worker.ts'],
+  entryPoints: ['src/index.ts', 'src/entry/*.ts'],
   splitting: true,
   legacyOutput: true,
   outDir: 'dist',
