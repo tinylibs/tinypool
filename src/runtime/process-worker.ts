@@ -8,7 +8,8 @@ import {
   TinypoolWorkerMessage,
 } from '../common'
 
-const __tinypool_worker_message__ = 'true'
+const __tinypool_worker_message__ = true
+const SIGKILL_TIMEOUT = 1000
 
 export default class ProcessWorker implements TinypoolWorker {
   name = 'ProcessWorker'
@@ -17,16 +18,35 @@ export default class ProcessWorker implements TinypoolWorker {
   threadId!: number
   port?: MessagePort
   channel?: TinypoolChannel
+  waitForExit!: Promise<void>
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
     const __dirname = dirname(fileURLToPath(import.meta.url))
 
     this.process = fork(resolve(__dirname, './entry/process.js'), options)
     this.threadId = this.process.pid!
+
+    this.process.on('exit', this.onUnexpectedExit)
+    this.waitForExit = new Promise((r) => this.process.on('exit', r))
+  }
+
+  onUnexpectedExit = () => {
+    this.process.emit('error', new Error('Worker exited unexpectedly'))
   }
 
   async terminate() {
-    return this.process.kill()
+    this.process.off('exit', this.onUnexpectedExit)
+
+    const sigkillTimeout = setTimeout(
+      () => this.process.kill('SIGKILL'),
+      SIGKILL_TIMEOUT
+    )
+
+    this.process.kill()
+    await this.waitForExit
+
+    this.port?.close()
+    clearTimeout(sigkillTimeout)
   }
 
   setChannel(channel: TinypoolChannel) {
@@ -65,6 +85,11 @@ export default class ProcessWorker implements TinypoolWorker {
 
   on(event: string, callback: (...args: any[]) => void) {
     return this.process.on(event, (data: TinypoolWorkerMessage) => {
+      // All errors should be forwarded to the pool
+      if (event === 'error') {
+        return callback(data)
+      }
+
       if (!data || !data.__tinypool_worker_message__) {
         return this.channel?.postMessage(data)
       }
