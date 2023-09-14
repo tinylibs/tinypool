@@ -9,7 +9,11 @@ export default class ThreadWorker implements TinypoolWorker {
   threadId!: number
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
-    this.thread = new Worker(fileURLToPath(import.meta.url + '/../entry/worker.js'), options);
+    // fix https://github.com/tinylibs/tinypool/issues/71
+    this.thread = new Worker(
+      fileURLToPath(import.meta.url + '/../entry/worker.js'),
+      options
+    )
     this.threadId = this.thread.threadId
   }
 
