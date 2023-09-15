@@ -20,7 +20,6 @@ export default class ProcessWorker implements TinypoolWorker {
   waitForExit!: Promise<void>
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
-    // fix https://github.com/tinylibs/tinypool/issues/71
     this.process = fork(
       fileURLToPath(import.meta.url + '/../entry/process.js'),
       options
