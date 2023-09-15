@@ -1,6 +1,5 @@
 import { ChildProcess, fork } from 'child_process'
 import { MessagePort, TransferListItem } from 'worker_threads'
-import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import {
   TinypoolChannel,
@@ -21,9 +20,10 @@ export default class ProcessWorker implements TinypoolWorker {
   waitForExit!: Promise<void>
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
-    const __dirname = dirname(fileURLToPath(import.meta.url))
-
-    this.process = fork(resolve(__dirname, './entry/process.js'), options)
+    this.process = fork(
+      fileURLToPath(import.meta.url + '/../entry/process.js'),
+      options
+    )
     this.threadId = this.process.pid!
 
     this.process.on('exit', this.onUnexpectedExit)

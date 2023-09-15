@@ -1,5 +1,4 @@
 import { fileURLToPath } from 'url'
-import { dirname, resolve } from 'path'
 import { TransferListItem, Worker } from 'worker_threads'
 import { TinypoolWorker } from '../common'
 
@@ -10,9 +9,10 @@ export default class ThreadWorker implements TinypoolWorker {
   threadId!: number
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
-    const __dirname = dirname(fileURLToPath(import.meta.url))
-
-    this.thread = new Worker(resolve(__dirname, './entry/worker.js'), options)
+    this.thread = new Worker(
+      fileURLToPath(import.meta.url + '/../entry/worker.js'),
+      options
+    )
     this.threadId = this.thread.threadId
   }
 
