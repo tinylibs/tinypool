@@ -3,6 +3,7 @@ import {
   ReadyMessage,
   RequestMessage,
   ResponseMessage,
+  SpawnMessage,
   StartupMessage,
   TinypoolWorkerMessage,
 } from '../common'
@@ -21,6 +22,12 @@ process.__tinypool_state__ = {
   isTinypoolWorker: true,
   workerData: null,
   workerId: process.pid,
+}
+
+let emittedReady = false
+if (!emittedReady) {
+  process.send!(<SpawnMessage>{ spawned: true })
+  emittedReady = true
 }
 
 process.on('message', (message: IncomingMessage) => {

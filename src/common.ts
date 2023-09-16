@@ -18,7 +18,7 @@ export interface TinypoolWorker {
     resourceLimits?: any
     workerData?: TinypoolData
     trackUnmanagedFds?: boolean
-  }): void
+  }): Promise<void>
   terminate(): Promise<any>
   postMessage(message: any, transferListItem?: TransferListItem[]): void
   setChannel?: (channel: TinypoolChannel) => void
@@ -55,6 +55,10 @@ export interface RequestMessage {
   task: any
   filename: string
   name: string
+}
+
+export interface SpawnMessage {
+  spawned: true
 }
 
 export interface ReadyMessage {

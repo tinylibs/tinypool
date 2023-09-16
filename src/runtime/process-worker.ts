@@ -3,10 +3,12 @@ import { MessagePort, TransferListItem } from 'worker_threads'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import {
+  SpawnMessage,
   TinypoolChannel,
   TinypoolWorker,
   TinypoolWorkerMessage,
 } from '../common'
+import { StartupMessage } from 'tinypool'
 
 const __tinypool_worker_message__ = true
 const SIGKILL_TIMEOUT = 1000
@@ -20,7 +22,7 @@ export default class ProcessWorker implements TinypoolWorker {
   channel?: TinypoolChannel
   waitForExit!: Promise<void>
 
-  initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
+  async initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
     const __dirname = dirname(fileURLToPath(import.meta.url))
 
     this.process = fork(resolve(__dirname, './entry/process.js'), options)
@@ -28,6 +30,23 @@ export default class ProcessWorker implements TinypoolWorker {
 
     this.process.on('exit', this.onUnexpectedExit)
     this.waitForExit = new Promise((r) => this.process.on('exit', r))
+
+    // Wait for the worker to emit `SpawnMessage`
+    // In Bun the child_process does not emit 'spawn' event and doesn't start immediately
+    // when .fork() is called. All messages that are sent to it are ignored if it hasn't yet started.
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error('Timeout starting ProcessWorker')),
+        2_000
+      )
+
+      this.process.once('message', (message: SpawnMessage) => {
+        if (message?.spawned) {
+          resolve()
+          clearTimeout(timeout)
+        }
+      })
+    })
   }
 
   onUnexpectedExit = () => {
@@ -58,7 +77,10 @@ export default class ProcessWorker implements TinypoolWorker {
     })
   }
 
-  postMessage(message: any, transferListItem?: Readonly<TransferListItem[]>) {
+  postMessage(
+    message: StartupMessage,
+    transferListItem?: Readonly<TransferListItem[]>
+  ) {
     transferListItem?.forEach((item) => {
       if (item instanceof MessagePort) {
         this.port = item
@@ -67,17 +89,21 @@ export default class ProcessWorker implements TinypoolWorker {
 
     // Mirror port's messages to process
     if (this.port) {
-      this.port.on('message', (message) =>
+      this.port.start()
+      this.port.on('message', (message) => {
         this.process.send(<TinypoolWorkerMessage<'port'>>{
           ...message,
           source: 'port',
           __tinypool_worker_message__,
         })
-      )
+      })
     }
 
+    // Do not pass thread related options to process
+    const { port, sharedBuffer, useAtomics, ...serializableMessage } = message
+
     return this.process.send(<TinypoolWorkerMessage<'pool'>>{
-      ...message,
+      ...serializableMessage,
       source: 'pool',
       __tinypool_worker_message__,
     })

@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup'
 
-export default defineConfig({
+export default defineConfig((mode) => ({
   entryPoints: ['src/index.ts', 'src/entry/*.ts'],
   splitting: true,
   legacyOutput: true,
@@ -9,5 +9,5 @@ export default defineConfig({
   tsconfig: './tsconfig.json',
   target: 'es2020',
   clean: true,
-  dts: true,
-})
+  dts: mode.watch ? false : true,
+}))

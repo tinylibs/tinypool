@@ -38,6 +38,12 @@ parentPort!.on('message', (message: StartupMessage) => {
   useAtomics =
     process.env.PISCINA_DISABLE_ATOMICS === '1' ? false : message.useAtomics
 
+  if (useAtomics && process.versions.bun) {
+    const error = 'useAtomics cannot be used with Bun at the moment.'
+    console.error(error)
+    throw new Error(error)
+  }
+
   const { port, sharedBuffer, filename, name } = message
 
   ;(async function () {
@@ -48,6 +54,7 @@ parentPort!.on('message', (message: StartupMessage) => {
     const readyMessage: ReadyMessage = { ready: true }
     parentPort!.postMessage(readyMessage)
 
+    port.start()
     port.on('message', onMessage.bind(null, port, sharedBuffer))
     atomicsWaitLoop(port, sharedBuffer)
   })().catch(throwInNextTick)

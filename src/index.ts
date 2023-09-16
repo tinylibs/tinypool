@@ -658,31 +658,32 @@ class ThreadPool {
     this.workers.onAvailable((w: WorkerInfo) => this._onWorkerAvailable(w))
 
     this.startingUp = true
-    this._ensureMinimumWorkers()
-    this.startingUp = false
+    this._ensureMinimumWorkers().then(() => {
+      this.startingUp = false
+    })
   }
-  _ensureEnoughWorkersForTaskQueue(): void {
+  async _ensureEnoughWorkersForTaskQueue(): Promise<void> {
     while (
       this.workers.size < this.taskQueue.size &&
       this.workers.size < this.options.maxThreads
     ) {
-      this._addNewWorker()
+      await this._addNewWorker()
     }
   }
 
-  _ensureMaximumWorkers(): void {
+  async _ensureMaximumWorkers(): Promise<void> {
     while (this.workers.size < this.options.maxThreads) {
-      this._addNewWorker()
+      await this._addNewWorker()
     }
   }
 
-  _ensureMinimumWorkers(): void {
+  async _ensureMinimumWorkers(): Promise<void> {
     while (this.workers.size < this.options.minThreads) {
-      this._addNewWorker()
+      await this._addNewWorker()
     }
   }
 
-  _addNewWorker(): void {
+  async _addNewWorker(): Promise<void> {
     const pool = this
     const workerIds = this.workerIds
 
@@ -701,7 +702,7 @@ class ThreadPool {
         ? new ProcessWorker()
         : new ThreadWorker()
 
-    worker.initialize({
+    await worker.initialize({
       env: this.options.env,
       argv: this.options.argv,
       execArgv: this.options.execArgv,
@@ -740,6 +741,7 @@ class ThreadPool {
     }
 
     const { port1, port2 } = new MessageChannel()
+    port1.start()
     const workerInfo = new WorkerInfo(
       worker,
       port1,
@@ -781,7 +783,7 @@ class ThreadPool {
       )
     })
 
-    worker.on('error', (err: Error) => {
+    worker.on('error', async (err: Error) => {
       // Work around the bug in https://github.com/nodejs/node/pull/33394
       worker.ref = () => {}
 
@@ -795,7 +797,7 @@ class ThreadPool {
       this._removeWorker(workerInfo)
 
       if (workerInfo.isReady() && !this.workerFailsDuringBootstrap) {
-        this._ensureMinimumWorkers()
+        await this._ensureMinimumWorkers()
       } else {
         // Do not start new workers over and over if they already fail during
         // bootstrap, there's no point.
@@ -881,7 +883,7 @@ class ThreadPool {
     }
   }
 
-  runTask(task: any, options: RunOptions): Promise<any> {
+  async runTask(task: any, options: RunOptions): Promise<any> {
     let { filename, name } = options
     const { transferList = [], signal = null, channel } = options
 
@@ -944,7 +946,7 @@ class ThreadPool {
         if (taskInfo.workerInfo !== null) {
           // Already running: We cancel the Worker this is running on.
           this._removeWorker(taskInfo.workerInfo)
-          this._ensureMinimumWorkers()
+          void this._ensureMinimumWorkers()
         } else {
           // Not yet running: Remove it from the queue.
           this.taskQueue.remove(taskInfo)
@@ -965,7 +967,7 @@ class ThreadPool {
         }
       } else {
         if (this.workers.size < this.options.maxThreads) {
-          this._addNewWorker()
+          await this._addNewWorker()
         }
         this.taskQueue.push(taskInfo)
       }
@@ -989,7 +991,7 @@ class ThreadPool {
       (workerInfo === null || workerInfo.currentUsage() > 0) &&
       this.workers.size < this.options.maxThreads
     ) {
-      this._addNewWorker()
+      await this._addNewWorker()
       waitingForNewWorker = true
     }
 
@@ -1099,7 +1101,7 @@ class ThreadPool {
 
     await Promise.all(exitEvents)
 
-    this._ensureMinimumWorkers()
+    await this._ensureMinimumWorkers()
   }
 }
 
