@@ -1,3 +1,5 @@
+[![Pheno Agency](/banner.svg)](https://pheno.agency)
+
 # Tinypool - the node.js worker pool 🧵
 
 > Piscina: A fast, efficient Node.js Worker Thread Pool implementation
