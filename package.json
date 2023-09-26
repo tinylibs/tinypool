@@ -13,6 +13,7 @@
   "scripts": {
     "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --no-coverage --runInBand",
     "test:dev": "node --experimental-vm-modules --trace-warnings node_modules/jest/bin/jest.js --watch --no-coverage",
+    "test:bun": "bun --bun test bun-test/**",
     "dev": "tsup --watch",
     "build": "tsup",
     "publish": "clean-publish",
@@ -72,7 +73,9 @@
     "extensionsToTreatAsEsm": [
       ".ts"
     ],
-    "testRegex": "test.(js|ts|tsx)$",
+    "testMatch": [
+      "**/test/**/*.test.ts"
+    ],
     "verbose": true,
     "coverageDirectory": "./coverage/",
     "collectCoverage": true,
