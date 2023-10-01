@@ -14,6 +14,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
+    "types": ["vitest/globals"],
     "paths": {
       "tinypool": ["./dist/index.d.ts"]
     }

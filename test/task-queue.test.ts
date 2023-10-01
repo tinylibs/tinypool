@@ -268,7 +268,7 @@ test('queued tasks can be cancelled', async () => {
     maxThreads: 1,
   })
 
-  const time = 500
+  const time = 2000
   const taskCount = 10
 
   const promises = []
