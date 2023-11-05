@@ -169,6 +169,26 @@ test('runtime can be changed after recycle', async () => {
   })
 })
 
+test('isolated idle workers change runtime after recycle', async () => {
+  const pool = createPool({
+    runtime: 'worker_threads',
+    minThreads: 2,
+    maxThreads: 2,
+    isolateWorkers: true,
+  })
+  const getState = 'process.__tinypool_state__'
+
+  await expect(pool.run(getState)).resolves.toMatchObject({
+    isWorkerThread: true,
+  })
+
+  await pool.recycleWorkers({ runtime: 'child_process' })
+
+  await expect(
+    Promise.all([pool.run(getState), pool.run(getState)])
+  ).resolves.toMatchObject([{ isChildProcess: true }, { isChildProcess: true }])
+})
+
 function createPool(options: Partial<Tinypool['options']>) {
   const pool = new Tinypool({
     filename: path.resolve(__dirname, 'fixtures/eval.js'),
