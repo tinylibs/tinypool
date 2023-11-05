@@ -1071,12 +1071,16 @@ class ThreadPool {
   }
 
   async recycleWorkers(options: Pick<Options, 'runtime'> = {}) {
+    const runtimeChanged =
+      options?.runtime && options.runtime !== this.options.runtime
+
     if (options?.runtime) {
       this.options.runtime = options.runtime
     }
 
-    // Worker's are automatically recycled when isolateWorkers is enabled
-    if (this.options.isolateWorkers) {
+    // Worker's are automatically recycled when isolateWorkers is enabled.
+    // Idle workers still need to be recycled if runtime changed
+    if (this.options.isolateWorkers && !runtimeChanged) {
       return
     }
 
