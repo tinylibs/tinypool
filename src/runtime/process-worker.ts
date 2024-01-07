@@ -22,6 +22,7 @@ export default class ProcessWorker implements TinypoolWorker {
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
     this.process = fork(
       fileURLToPath(import.meta.url + '/../entry/process.js'),
+      options.argv,
       options
     )
     this.threadId = this.process.pid!
