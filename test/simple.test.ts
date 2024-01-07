@@ -96,6 +96,17 @@ test('passing argv to workers works', async () => {
   expect(env).toEqual(['a', 'b', 'c'])
 })
 
+test('passing argv to child process', async () => {
+  const pool = new Tinypool({
+    runtime: 'child_process',
+    filename: resolve(__dirname, 'fixtures/eval.js'),
+    argv: ['a', 'b', 'c'],
+  })
+
+  const env = await pool.run('process.argv.slice(2)')
+  expect(env).toEqual(['a', 'b', 'c'])
+})
+
 test('passing execArgv to workers works', async () => {
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/eval.js'),
