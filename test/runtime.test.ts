@@ -85,6 +85,12 @@ describe('child_process', () => {
     expect(result).toBe(threadId)
   })
 
+  test('child process workerId should be internal tinypool workerId', async () => {
+    const pool = createPool({ runtime: 'child_process' })
+    const workerId = await pool.run('process.__tinypool_state__.workerId')
+    expect(workerId).toBe(1)
+  })
+
   test('errors are serialized', async () => {
     const pool = createPool({ runtime: 'child_process' })
 

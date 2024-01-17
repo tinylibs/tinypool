@@ -16,7 +16,7 @@ export interface TinypoolWorker {
     argv?: string[]
     execArgv?: string[]
     resourceLimits?: any
-    workerData?: TinypoolData
+    workerData: TinypoolData
     trackUnmanagedFds?: boolean
   }): void
   terminate(): Promise<any>

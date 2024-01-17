@@ -20,7 +20,7 @@ process.__tinypool_state__ = {
   isChildProcess: true,
   isTinypoolWorker: true,
   workerData: null,
-  workerId: process.pid,
+  workerId: Number(process.env.TINYPOOL_WORKER_ID),
 }
 
 process.on('message', (message: IncomingMessage) => {
