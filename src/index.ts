@@ -36,6 +36,7 @@ import {
 } from './common'
 import ThreadWorker from './runtime/thread-worker'
 import ProcessWorker from './runtime/process-worker'
+import BunWorker from './runtime/bun-worker'
 
 declare global {
   namespace NodeJS {
@@ -44,6 +45,7 @@ declare global {
         isTinypoolWorker: boolean
         isWorkerThread?: boolean
         isChildProcess?: boolean
+        isBunWorker?: boolean
         workerData: any
         workerId: number
       }
@@ -135,7 +137,7 @@ class ArrayTaskQueue implements TaskQueue {
 
 interface Options {
   filename?: string | null
-  runtime?: 'worker_threads' | 'child_process'
+  runtime?: 'worker_threads' | 'child_process' | 'bun_workers'
   name?: string
   minThreads?: number
   maxThreads?: number
@@ -699,6 +701,8 @@ class ThreadPool {
     const worker =
       this.options.runtime === 'child_process'
         ? new ProcessWorker()
+        : this.options.runtime === 'bun_workers'
+        ? new BunWorker()
         : new ThreadWorker()
 
     worker.initialize({
@@ -740,6 +744,7 @@ class ThreadPool {
     }
 
     const { port1, port2 } = new MessageChannel()
+    port1.start()
     const workerInfo = new WorkerInfo(
       worker,
       port1,

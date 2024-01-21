@@ -1,35 +1,66 @@
 /*
- * Benchmark for testing whether Tinypool's worker creation and teardown is expensive.
+ * Benchmark focusing on the performance `isolateWorkers` option
+ *
+ * Options:
+ * - `--rounds` (optional) - Specify how many iterations to run
+ * - `--threads` (optional) - Specify how many threads to use
  */
-import { cpus } from 'node:os'
-import { Worker } from 'node:worker_threads'
+
+import * as os from 'node:os'
+import * as WorkerThreads from 'node:worker_threads'
 
 import Tinypool from '../dist/esm/index.js'
 
-const THREADS = cpus().length - 1
-const ROUNDS = 5_000
+const IS_BUN = process.versions.bun !== undefined
+const USE_ATOMICS = !IS_BUN
+const THREADS = parseInt(getArgument('--threads') ?? getMaxThreads(), 10)
+const ROUNDS = parseInt(getArgument('--rounds') ?? '2000', 10)
 
-await logTime('Tinypool', runTinypool)
-await logTime('Worker threads', runWorkerThreads)
+console.log('Options:', { THREADS, ROUNDS, IS_BUN }, '\n')
 
-async function runTinypool() {
+if (IS_BUN) {
+  await logTime(
+    "Tinypool { runtime: 'bun_workers' }",
+    runTinypool('bun_workers')
+  )
+
+  await logTime('Native Bun workers', runBunWorkers())
+  process.exit(0)
+}
+
+await logTime(
+  "Tinypool { runtime: 'worker_threads' }",
+  runTinypool('worker_threads')
+)
+await logTime(
+  "Tinypool { runtime: 'child_process' }",
+  runTinypool('child_process')
+)
+
+await logTime('Native node:worker_threads', runNodeWorkerThreads())
+
+function runTinypool(runtime) {
   const pool = new Tinypool({
+    runtime,
     filename: new URL('./fixtures/add.mjs', import.meta.url).href,
     isolateWorkers: true,
     minThreads: THREADS,
     maxThreads: THREADS,
+    useAtomics: USE_ATOMICS,
   })
 
-  await Promise.all(
-    Array(ROUNDS)
-      .fill()
-      .map(() => pool.run({ a: 1, b: 2 }))
-  )
+  return async function run() {
+    await Promise.all(
+      Array(ROUNDS)
+        .fill()
+        .map(() => pool.run({ a: 1, b: 2 }))
+    )
+  }
 }
 
-async function runWorkerThreads() {
+function runNodeWorkerThreads() {
   async function task() {
-    const worker = new Worker('./fixtures/wrap-add.mjs')
+    const worker = new WorkerThreads.Worker('./fixtures/wrap-add.mjs')
     worker.postMessage({ a: 1, b: 2 })
 
     await new Promise((resolve, reject) =>
@@ -50,16 +81,75 @@ async function runWorkerThreads() {
     }
   }
 
-  await Promise.all(
-    Array(THREADS)
-      .fill(execute)
-      .map((task) => task())
-  )
+  return async function run() {
+    await Promise.all(
+      Array(THREADS)
+        .fill(execute)
+        .map((task) => task())
+    )
+  }
+}
+
+function runBunWorkers() {
+  async function task() {
+    const worker = new Worker('./fixtures/wrap-add-bun.mjs')
+    worker.postMessage({ a: 1, b: 2 })
+
+    await new Promise((resolve, reject) => {
+      worker.onmessage = (event) =>
+        event.data === 3 ? resolve() : reject('Not 3')
+    })
+
+    await worker.terminate()
+  }
+
+  const pool = Array(ROUNDS).fill(task)
+
+  async function execute() {
+    const task = pool.shift()
+
+    if (task) {
+      await task()
+      return execute()
+    }
+  }
+
+  return async function run() {
+    await Promise.all(
+      Array(THREADS)
+        .fill(execute)
+        .map((task) => task())
+    )
+  }
+}
+
+function getArgument(flag) {
+  const index = process.argv.indexOf(flag)
+  if (index === -1) return
+
+  return process.argv[index + 1]
+}
+
+function getMaxThreads() {
+  return os.availableParallelism?.() || os.cpus().length - 1
 }
 
 async function logTime(label, method) {
+  console.log(`${label} | START`)
+
   const start = process.hrtime.bigint()
   await method()
   const end = process.hrtime.bigint()
-  console.log(label, 'took', ((end - start) / 1_000_000n).toString(), 'ms')
+
+  console.log(`${label} | END   ${((end - start) / 1_000_000n).toString()} ms`)
+
+  console.log('Cooling down for 2s')
+  const interval = setInterval(() => process.stdout.write('.'), 100)
+  await sleep(2_000)
+  clearInterval(interval)
+  console.log(' ✓\n')
+}
+
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms))
 }
