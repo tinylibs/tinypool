@@ -23,6 +23,9 @@ process.__tinypool_state__ = {
   workerId: Number(process.env.TINYPOOL_WORKER_ID),
 }
 
+const memoryUsage = process.memoryUsage.bind(process)
+const send = process.send!.bind(process)
+
 process.on('message', (message: IncomingMessage) => {
   // Message was not for port or pool
   // It's likely end-users own communication between main and worker
@@ -36,7 +39,7 @@ process.on('message', (message: IncomingMessage) => {
         await getHandler(filename, name)
       }
 
-      process.send!(<OutgoingMessage>{
+      send!(<OutgoingMessage>{
         ready: true,
         source: 'pool',
         __tinypool_worker_message__: true,
@@ -69,7 +72,7 @@ async function onMessage(message: IncomingMessage & { source: 'port' }) {
       taskId,
       result,
       error: null,
-      usedMemory: process.memoryUsage().heapUsed,
+      usedMemory: memoryUsage().heapUsed,
     }
 
     // If the task used e.g. console.log(), wait for the stream to drain
@@ -89,11 +92,11 @@ async function onMessage(message: IncomingMessage & { source: 'port' }) {
       taskId,
       result: null,
       error: serializeError(error),
-      usedMemory: process.memoryUsage().heapUsed,
+      usedMemory: memoryUsage().heapUsed,
     }
   }
 
-  process.send!(response)
+  send!(response)
 }
 
 function serializeError(error: unknown) {
