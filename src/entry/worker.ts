@@ -28,6 +28,7 @@ process.__tinypool_state__ = {
   workerId: tinypoolPrivateData.workerId,
 }
 
+const memoryUsage = process.memoryUsage.bind(process)
 let useAtomics: boolean = process.env.PISCINA_DISABLE_ATOMICS !== '1'
 
 // We should only receive this message once, when the Worker starts. It gives
@@ -110,7 +111,7 @@ function onMessage(
         taskId,
         result: result,
         error: null,
-        usedMemory: process.memoryUsage().heapUsed,
+        usedMemory: memoryUsage().heapUsed,
       }
 
       // If the task used e.g. console.log(), wait for the stream to drain
@@ -130,7 +131,7 @@ function onMessage(
         // It may be worth taking a look at the error cloning algorithm we
         // use in Node.js core here, it's quite a bit more flexible
         error,
-        usedMemory: process.memoryUsage().heapUsed,
+        usedMemory: memoryUsage().heapUsed,
       }
     }
     currentTasks--
