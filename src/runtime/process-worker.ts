@@ -18,6 +18,7 @@ export default class ProcessWorker implements TinypoolWorker {
   port?: MessagePort
   channel?: TinypoolChannel
   waitForExit!: Promise<void>
+  isTerminating = false
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
     this.process = fork(
@@ -42,6 +43,7 @@ export default class ProcessWorker implements TinypoolWorker {
   }
 
   async terminate() {
+    this.isTerminating = true
     this.process.off('exit', this.onUnexpectedExit)
 
     const sigkillTimeout = setTimeout(
@@ -61,8 +63,14 @@ export default class ProcessWorker implements TinypoolWorker {
 
     // Mirror channel's messages to process
     this.channel.onMessage((message: any) => {
-      this.process.send(message)
+      this.send(message)
     })
+  }
+
+  private send(message: Parameters<NonNullable<typeof process['send']>>[0]) {
+    if (!this.isTerminating) {
+      this.process.send(message)
+    }
   }
 
   postMessage(message: any, transferListItem?: Readonly<TransferListItem[]>) {
@@ -75,7 +83,7 @@ export default class ProcessWorker implements TinypoolWorker {
     // Mirror port's messages to process
     if (this.port) {
       this.port.on('message', (message) =>
-        this.process.send(<TinypoolWorkerMessage<'port'>>{
+        this.send(<TinypoolWorkerMessage<'port'>>{
           ...message,
           source: 'port',
           __tinypool_worker_message__,
@@ -83,7 +91,7 @@ export default class ProcessWorker implements TinypoolWorker {
       )
     }
 
-    return this.process.send(<TinypoolWorkerMessage<'pool'>>{
+    return this.send(<TinypoolWorkerMessage<'pool'>>{
       ...message,
       source: 'pool',
       __tinypool_worker_message__,
