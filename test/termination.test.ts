@@ -30,3 +30,29 @@ test('termination timeout throws when worker does not terminate in time', async 
     'Failed to terminate worker'
   )
 })
+
+test('writing to terminating worker does not crash', async () => {
+  const listeners: ((msg: any) => void)[] = []
+
+  const pool = new Tinypool({
+    runtime: 'child_process',
+    filename: resolve(__dirname, 'fixtures/sleep.js'),
+    minThreads: 1,
+    maxThreads: 1,
+  })
+
+  await pool.run(
+    {},
+    {
+      channel: {
+        onMessage: (listener) => listeners.push(listener),
+        postMessage: () => {},
+      },
+    }
+  )
+
+  const destroyed = pool.destroy()
+  listeners.forEach((listener) => listener('Hello from main thread'))
+
+  await destroyed
+})
