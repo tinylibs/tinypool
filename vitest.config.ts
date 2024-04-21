@@ -9,11 +9,8 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    isolate: false,
 
-    poolOptions: {
-      threads: { singleThread: true },
-      forks: { singleFork: true },
-    },
     // simple.test.ts expects to be run in main thread
     poolMatchGlobs: [['**/simple.test.ts', 'forks']],
   },
