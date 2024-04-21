@@ -1161,8 +1161,9 @@ class Tinypool extends EventEmitterAsyncResource {
     })
   }
 
-  destroy() {
-    return this.#pool.destroy()
+  async destroy() {
+    await this.#pool.destroy()
+    this.emitDestroy()
   }
 
   get options(): FilledOptions {
