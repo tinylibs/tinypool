@@ -1,4 +1,4 @@
-import { workerId } from '../../dist/esm/index.js'
+import { workerId } from '../../dist/index.js'
 
 export default async ({ slow }) => {
   if (slow) {

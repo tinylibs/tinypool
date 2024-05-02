@@ -3,11 +3,31 @@
   "version": "0.8.4",
   "description": "A minimal and tiny Node.js Worker Thread Pool implementation, a fork of piscina, but with fewer features",
   "type": "module",
-  "main": "./dist/esm/index.js",
-  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./entry/utils": {
+      "types": "./dist/entry/utils.d.ts",
+      "default": "./dist/entry/utils.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "entry/utils": [
+        "./dist/entry/utils.d.ts"
+      ],
+      "*": [
+        "./dist/index.d.ts"
+      ]
+    }
+  },
   "files": [
-    "dist/**"
+    "dist"
   ],
   "packageManager": "pnpm@8.4.0",
   "scripts": {
@@ -29,23 +49,22 @@
   "license": "MIT",
   "devDependencies": {
     "@types/concat-stream": "^1.6.1",
-    "@types/node": "^15.0.1",
-    "@typescript-eslint/eslint-plugin": "^4.22.0",
-    "@typescript-eslint/parser": "^4.22.0",
+    "@types/node": "^20.12.8",
+    "@typescript-eslint/eslint-plugin": "^7.8.0",
+    "@typescript-eslint/parser": "^7.8.0",
     "abort-controller": "^3.0.0",
     "clean-publish": "^3.4.4",
     "concat-stream": "^2.0.0",
     "esbuild": "^0.14.5",
     "esbuild-register": "^3.2.1",
-    "eventemitter-asyncresource": "^1.0.0",
     "gen-esm-wrapper": "^1.1.1",
     "husky": "^7.0.4",
     "nano-staged": "^0.5.0",
     "prettier": "^2.5.1",
     "regenerator-runtime": "^0.13.9",
     "snazzy": "^9.0.0",
-    "tsup": "^5.11.6",
-    "typescript": "4.3.x",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5",
     "vite": "^5.2.10",
     "vitest": "^1.5.0"
   },

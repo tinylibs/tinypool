@@ -4,7 +4,7 @@
 import { cpus } from 'node:os'
 import { Worker } from 'node:worker_threads'
 
-import Tinypool from '../dist/esm/index.js'
+import Tinypool from '../dist/index.js'
 
 const THREADS = cpus().length - 1
 const ROUNDS = 5_000

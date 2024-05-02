@@ -1,4 +1,4 @@
-import Tinypool from '../dist/esm/index.js'
+import Tinypool from '../dist/index.js'
 
 async function simpleBenchmark({ duration = 10000 } = {}) {
   const pool = new Tinypool({

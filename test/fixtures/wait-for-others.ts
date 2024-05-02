@@ -1,5 +1,6 @@
 import { threadId } from 'worker_threads'
 
+// @ts-ignore
 export default async function ([i32array, n]) {
   Atomics.add(i32array, 0, 1)
   Atomics.notify(i32array, 0, Infinity)

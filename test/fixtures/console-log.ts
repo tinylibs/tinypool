@@ -1,4 +1,4 @@
-import Tinypool from '../../dist/esm/index'
+import Tinypool from '../../dist/index'
 import { resolve } from 'path'
 
 const pool = new Tinypool({

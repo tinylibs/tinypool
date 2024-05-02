@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    "target": "ESNext",
+    "module": "ESNext",
     "strict": true,
-    "jsx": "react-jsx",
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
+    "lib": ["ESNext", "WebWorker"],
     "noUncheckedIndexedAccess": true,
     "baseUrl": ".",
     "noUnusedLocals": true,
@@ -19,6 +19,6 @@
       "tinypool": ["./dist/index.d.ts"]
     }
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["./*.d.ts", "src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]
 }
