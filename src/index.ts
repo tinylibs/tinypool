@@ -4,7 +4,6 @@ import {
   receiveMessageOnPort,
 } from 'worker_threads'
 import { once, EventEmitterAsyncResource } from 'events'
-// import EventEmitterAsyncResource from './EventEmitterAsyncResource'
 import { AsyncResource } from 'async_hooks'
 import { fileURLToPath, URL } from 'url'
 import { join } from 'path'
