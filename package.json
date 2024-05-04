@@ -22,25 +22,11 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./entry/utils": {
-      "types": "./dist/entry/utils.d.ts",
-      "default": "./dist/entry/utils.js"
     }
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "entry/utils": [
-        "./dist/entry/utils.d.ts"
-      ],
-      "*": [
-        "./dist/index.d.ts"
-      ]
-    }
-  },
   "files": [
     "dist"
   ],
@@ -55,21 +41,11 @@
     "prepare": "husky install"
   },
   "devDependencies": {
-    "@types/concat-stream": "^1.6.1",
     "@types/node": "^20.12.8",
-    "@typescript-eslint/eslint-plugin": "^7.8.0",
-    "@typescript-eslint/parser": "^7.8.0",
-    "abort-controller": "^3.0.0",
     "clean-publish": "^3.4.4",
-    "concat-stream": "^2.0.0",
-    "esbuild": "^0.14.5",
-    "esbuild-register": "^3.2.1",
-    "gen-esm-wrapper": "^1.1.1",
     "husky": "^7.0.4",
     "nano-staged": "^0.5.0",
     "prettier": "^2.5.1",
-    "regenerator-runtime": "^0.13.9",
-    "snazzy": "^9.0.0",
     "tsup": "^8.0.2",
     "typescript": "^5.4.5",
     "vite": "^5.2.10",
