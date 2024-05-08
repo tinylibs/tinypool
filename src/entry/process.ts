@@ -1,4 +1,4 @@
-import { stderr, stdout } from 'src/utils'
+import { stderr, stdout } from '../utils'
 import {
   ReadyMessage,
   RequestMessage,

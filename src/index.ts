@@ -3,8 +3,7 @@ import {
   MessagePort,
   receiveMessageOnPort,
 } from 'worker_threads'
-import { once } from 'events'
-import EventEmitterAsyncResource from './EventEmitterAsyncResource'
+import { once, EventEmitterAsyncResource } from 'events'
 import { AsyncResource } from 'async_hooks'
 import { fileURLToPath, URL } from 'url'
 import { join } from 'path'

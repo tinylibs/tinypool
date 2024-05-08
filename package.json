@@ -1,15 +1,38 @@
 {
   "name": "tinypool",
-  "version": "0.8.4",
-  "description": "A minimal and tiny Node.js Worker Thread Pool implementation, a fork of piscina, but with fewer features",
   "type": "module",
-  "main": "./dist/esm/index.js",
-  "module": "./dist/esm/index.js",
+  "version": "0.8.4",
+  "packageManager": "pnpm@9.0.6",
+  "description": "A minimal and tiny Node.js Worker Thread Pool implementation, a fork of piscina, but with fewer features",
+  "license": "MIT",
+  "homepage": "https://github.com/tinylibs/tinypool#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tinylibs/tinypool.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tinylibs/tinypool/issues"
+  },
+  "keywords": [
+    "fast",
+    "worker threads",
+    "thread pool"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist/**"
+    "dist"
   ],
-  "packageManager": "pnpm@8.4.0",
+  "engines": {
+    "node": "^18.0.0 || >=20.0.0"
+  },
   "scripts": {
     "test": "vitest",
     "dev": "tsup --watch",
@@ -17,44 +40,16 @@
     "publish": "clean-publish",
     "prepare": "husky install"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tinylibs/tinypool.git"
-  },
-  "keywords": [
-    "fast",
-    "worker threads",
-    "thread pool"
-  ],
-  "license": "MIT",
   "devDependencies": {
-    "@types/concat-stream": "^1.6.1",
-    "@types/node": "^15.0.1",
-    "@typescript-eslint/eslint-plugin": "^4.22.0",
-    "@typescript-eslint/parser": "^4.22.0",
-    "abort-controller": "^3.0.0",
+    "@types/node": "^20.12.8",
     "clean-publish": "^3.4.4",
-    "concat-stream": "^2.0.0",
-    "esbuild": "^0.14.5",
-    "esbuild-register": "^3.2.1",
-    "eventemitter-asyncresource": "^1.0.0",
-    "gen-esm-wrapper": "^1.1.1",
     "husky": "^7.0.4",
     "nano-staged": "^0.5.0",
     "prettier": "^2.5.1",
-    "regenerator-runtime": "^0.13.9",
-    "snazzy": "^9.0.0",
-    "tsup": "^5.11.6",
-    "typescript": "4.3.x",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5",
     "vite": "^5.2.10",
     "vitest": "^1.5.0"
-  },
-  "bugs": {
-    "url": "https://github.com/tinylibs/tinypool/issues"
-  },
-  "homepage": "https://github.com/tinylibs/tinypool#readme",
-  "engines": {
-    "node": ">=14.0.0"
   },
   "pnpm": {
     "overrides": {
