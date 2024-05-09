@@ -35,6 +35,7 @@
   },
   "scripts": {
     "test": "vitest",
+    "bench": "vitest bench",
     "dev": "tsup --watch",
     "build": "tsup",
     "publish": "clean-publish",
