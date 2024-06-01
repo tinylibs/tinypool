@@ -1,4 +1,3 @@
-
 # Tinypool - the node.js worker pool 🧵
 
 > Piscina: A fast, efficient Node.js Worker Thread Pool implementation
@@ -13,7 +12,7 @@ Tinypool is a fork of piscina. What we try to achieve in this library, is to eli
 - ❌ No utilization
 - ❌ No NAPI
 
-- Written in TypeScript, and ESM support only. For Node.js 14.x and higher.
+- Written in TypeScript, and ESM support only. For Node.js 18.x and higher.
 
 _In case you need more tiny libraries like tinypool or tinyspy, please consider submitting an [RFC](https://github.com/tinylibs/rfcs)_
 
