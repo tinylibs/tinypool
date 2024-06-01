@@ -39,11 +39,16 @@ process.on('message', (message: IncomingMessage) => {
         await getHandler(filename, name)
       }
 
-      send!(<OutgoingMessage>{
-        ready: true,
-        source: 'pool',
-        __tinypool_worker_message__: true,
-      })
+      send!(
+        <OutgoingMessage>{
+          ready: true,
+          source: 'pool',
+          __tinypool_worker_message__: true,
+        },
+        () => {
+          // Ignore errors coming from closed channel
+        }
+      )
     })().catch(throwInNextTick)
 
     return
