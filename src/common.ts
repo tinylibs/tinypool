@@ -9,6 +9,8 @@ export interface TinypoolChannel {
   postMessage(message: any): void
 }
 
+type Listener = (...args: any[]) => void
+
 export interface TinypoolWorker {
   runtime: string
   initialize(options: {
@@ -19,12 +21,25 @@ export interface TinypoolWorker {
     workerData: TinypoolData
     trackUnmanagedFds?: boolean
   }): void
+
+  /** Terminates the worker */
   terminate(): Promise<any>
+
+  /** Send message to the worker */
   postMessage(message: any, transferListItem?: TransferListItem[]): void
+
+  /** Listen on ready messages */
+  onReady(listener: Listener): void
+
+  /** Listen on errors */
+  onError(listener: Listener): void
+
+  /** Listen on exit. Called only **once**. */
+  onExit(listener: Listener): void
+
+  /** Set's channel for 'main <-> worker' communication */
   setChannel?: (channel: TinypoolChannel) => void
-  on(event: string, listener: (...args: any[]) => void): void
-  once(event: string, listener: (...args: any[]) => void): void
-  emit(event: string, ...data: any[]): void
+
   ref?: () => void
   unref?: () => void
   threadId: number

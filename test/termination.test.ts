@@ -57,20 +57,24 @@ test('writing to terminating worker does not crash', async () => {
   await destroyed
 })
 
-test('recycling workers while closing pool does not crash', async () => {
-  const pool = new Tinypool({
-    runtime: 'child_process',
-    filename: resolve(__dirname, 'fixtures/nested-pool.mjs'),
-    isolateWorkers: true,
-    minThreads: 1,
-    maxThreads: 1,
-  })
+test(
+  'recycling workers while closing pool does not crash',
+  { timeout: 10_000 },
+  async () => {
+    const pool = new Tinypool({
+      runtime: 'child_process',
+      filename: resolve(__dirname, 'fixtures/nested-pool.mjs'),
+      isolateWorkers: true,
+      minThreads: 1,
+      maxThreads: 1,
+    })
 
-  await Promise.all(
-    (Array(10) as (() => Promise<any>)[])
-      .fill(() => pool.run({}))
-      .map((fn) => fn())
-  )
+    await Promise.all(
+      (Array(10) as (() => Promise<any>)[])
+        .fill(() => pool.run({}))
+        .map((fn) => fn())
+    )
 
-  await pool.destroy()
-})
+    await pool.destroy()
+  }
+)

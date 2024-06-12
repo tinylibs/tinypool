@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
+import { inspect } from 'node:util'
 import { type TransferListItem, Worker } from 'node:worker_threads'
-import { type TinypoolWorker } from '../common'
+import { type ReadyMessage, type TinypoolWorker } from '../common'
 
 export default class ThreadWorker implements TinypoolWorker {
   name = 'ThreadWorker'
@@ -24,16 +25,25 @@ export default class ThreadWorker implements TinypoolWorker {
     return this.thread.postMessage(message, transferListItem)
   }
 
-  on(event: string, callback: (...args: any[]) => void) {
-    return this.thread.on(event, callback)
+  onReady(callback: (...args: any[]) => void) {
+    return this.thread.on('message', (message: ReadyMessage) => {
+      if (message.ready === true) {
+        return callback()
+      }
+
+      this.thread.emit(
+        'error',
+        new Error(`Unexpected message on Worker: ${inspect(message)}`)
+      )
+    })
   }
 
-  once(event: string, callback: (...args: any[]) => void) {
-    return this.thread.once(event, callback)
+  onError(callback: (...args: any[]) => void) {
+    return this.thread.on('error', callback)
   }
 
-  emit(event: string, ...data: any[]) {
-    return this.thread.emit(event, ...data)
+  onExit(callback: (...args: any[]) => void) {
+    return this.thread.once('exit', callback)
   }
 
   ref() {

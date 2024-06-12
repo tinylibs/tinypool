@@ -2,6 +2,7 @@ import { type ChildProcess, fork } from 'node:child_process'
 import { MessagePort, type TransferListItem } from 'node:worker_threads'
 import { fileURLToPath } from 'node:url'
 import {
+  type ReadyMessage,
   type TinypoolChannel,
   type TinypoolWorker,
   type TinypoolWorkerMessage,
@@ -36,6 +37,16 @@ export default class ProcessWorker implements TinypoolWorker {
 
     this.process.on('exit', this.onUnexpectedExit)
     this.waitForExit = new Promise((r) => this.process.on('exit', r))
+
+    this.process.on('message', (data: TinypoolWorkerMessage) => {
+      if (!data || !data.__tinypool_worker_message__) {
+        return this.channel?.postMessage(data)
+      }
+
+      if (data.source === 'port') {
+        this.port!.postMessage(data)
+      }
+    })
   }
 
   onUnexpectedExit = () => {
@@ -98,27 +109,34 @@ export default class ProcessWorker implements TinypoolWorker {
     })
   }
 
-  on(event: string, callback: (...args: any[]) => void) {
-    return this.process.on(event, (data: TinypoolWorkerMessage) => {
+  onReady(callback: (...args: any[]) => void) {
+    return this.process.on(
+      'message',
+      (data: TinypoolWorkerMessage & ReadyMessage) => {
+        if (
+          data.__tinypool_worker_message__ === true &&
+          data.source === 'pool' &&
+          data.ready === true
+        ) {
+          callback()
+        }
+      }
+    )
+  }
+
+  onError(callback: (...args: any[]) => void) {
+    return this.process.on('error', (data) => {
       // All errors should be forwarded to the pool
-      if (event === 'error') {
-        return callback(data)
-      }
-
-      if (!data || !data.__tinypool_worker_message__) {
-        return this.channel?.postMessage(data)
-      }
-
-      if (data.source === 'pool') {
-        callback(data)
-      } else if (data.source === 'port') {
-        this.port!.postMessage(data)
-      }
+      return callback(data)
     })
   }
 
-  once(event: string, callback: (...args: any[]) => void) {
-    return this.process.once(event, callback)
+  onExit(callback: (...args: any[]) => void) {
+    if (this.isTerminating) {
+      return callback()
+    }
+
+    return this.process.once('exit', callback)
   }
 
   emit(event: string, ...data: any[]) {

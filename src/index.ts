@@ -3,7 +3,7 @@ import {
   type MessagePort,
   receiveMessageOnPort,
 } from 'node:worker_threads'
-import { once, EventEmitterAsyncResource } from 'node:events'
+import { EventEmitterAsyncResource } from 'node:events'
 import { AsyncResource } from 'node:async_hooks'
 import { fileURLToPath, URL } from 'node:url'
 import { join } from 'node:path'
@@ -13,7 +13,6 @@ import { performance } from 'node:perf_hooks'
 import { readFileSync } from 'node:fs'
 import { amount as physicalCpuCount } from './physicalCpuCount'
 import {
-  type ReadyMessage,
   type RequestMessage,
   type ResponseMessage,
   type StartupMessage,
@@ -694,7 +693,7 @@ class ThreadPool {
     })
     const tinypoolPrivateData = { workerId: workerId! }
 
-    const worker =
+    const worker: TinypoolWorker =
       this.options.runtime === 'child_process'
         ? new ProcessWorker()
         : new ThreadWorker()
@@ -761,25 +760,17 @@ class ThreadPool {
 
     worker.postMessage(message, [port2])
 
-    worker.on('message', (message: ReadyMessage) => {
-      if (message.ready === true) {
-        if (workerInfo.currentUsage() === 0) {
-          workerInfo.unref()
-        }
-
-        if (!workerInfo.isReady()) {
-          workerInfo.markAsReady()
-        }
-        return
+    worker.onReady(() => {
+      if (workerInfo.currentUsage() === 0) {
+        workerInfo.unref()
       }
 
-      worker.emit(
-        'error',
-        new Error(`Unexpected message on Worker: ${inspect(message)}`)
-      )
+      if (!workerInfo.isReady()) {
+        workerInfo.markAsReady()
+      }
     })
 
-    worker.on('error', (err: Error) => {
+    worker.onError((err: Error) => {
       // Work around the bug in https://github.com/nodejs/node/pull/33394
       worker.ref = () => {}
 
@@ -809,12 +800,12 @@ class ThreadPool {
       }
     })
 
-    worker.unref()
+    worker.unref?.()
     port1.on('close', () => {
       // The port is only closed if the Worker stops for some reason, but we
       // always .unref() the Worker itself. We want to receive e.g. 'error'
       // events on it, so we ref it once we know it's going to exit anyway.
-      worker.ref()
+      worker.ref?.()
     })
 
     this.workers.add(workerInfo)
@@ -1056,13 +1047,14 @@ class ThreadPool {
       taskInfo.done(new Error('Terminating worker thread'))
     }
 
-    const exitEvents: Promise<any[]>[] = []
+    const exitEvents: Promise<void>[] = []
     while (this.workers.size > 0) {
       const [workerInfo] = this.workers
-      // @ts-expect-error -- TODO Fix
-      exitEvents.push(once(workerInfo.worker, 'exit'))
-      // @ts-expect-error -- TODO Fix
-      void this._removeWorker(workerInfo)
+
+      if (workerInfo) {
+        exitEvents.push(new Promise((r) => workerInfo.worker.onExit(r)))
+        void this._removeWorker(workerInfo)
+      }
     }
 
     await Promise.all(exitEvents)
@@ -1087,8 +1079,7 @@ class ThreadPool {
     Array.from(this.workers).filter((workerInfo) => {
       // Remove idle workers
       if (workerInfo.currentUsage() === 0) {
-        // @ts-expect-error -- TODO Fix
-        exitEvents.push(once(workerInfo.worker, 'exit'))
+        exitEvents.push(new Promise((r) => workerInfo.worker.onExit(r)))
         void this._removeWorker(workerInfo)
       }
       // Mark on-going workers for recycling.
