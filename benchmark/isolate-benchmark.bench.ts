@@ -2,7 +2,7 @@ import { bench } from 'vitest'
 import { cpus } from 'node:os'
 import { Worker } from 'node:worker_threads'
 import { fork } from 'node:child_process'
-import Tinypool, { Options } from '../dist/index'
+import Tinypool, { type Options } from '../dist/index'
 
 const THREADS = cpus().length - 1
 const ROUNDS = THREADS * 10

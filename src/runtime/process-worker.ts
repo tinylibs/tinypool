@@ -1,10 +1,10 @@
-import { ChildProcess, fork } from 'node:child_process'
-import { MessagePort, TransferListItem } from 'node:worker_threads'
+import { type ChildProcess, fork } from 'node:child_process'
+import { MessagePort, type TransferListItem } from 'node:worker_threads'
 import { fileURLToPath } from 'node:url'
 import {
-  TinypoolChannel,
-  TinypoolWorker,
-  TinypoolWorkerMessage,
+  type TinypoolChannel,
+  type TinypoolWorker,
+  type TinypoolWorkerMessage,
 } from '../common'
 
 const __tinypool_worker_message__ = true

@@ -1,10 +1,10 @@
 import { stderr, stdout } from '../utils'
 import {
-  ReadyMessage,
-  RequestMessage,
-  ResponseMessage,
-  StartupMessage,
-  TinypoolWorkerMessage,
+  type ReadyMessage,
+  type RequestMessage,
+  type ResponseMessage,
+  type StartupMessage,
+  type TinypoolWorkerMessage,
 } from '../common'
 import { getHandler, throwInNextTick } from './utils'
 

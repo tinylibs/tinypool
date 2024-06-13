@@ -1,6 +1,6 @@
 import {
   MessageChannel,
-  MessagePort,
+  type MessagePort,
   receiveMessageOnPort,
 } from 'node:worker_threads'
 import { once, EventEmitterAsyncResource } from 'node:events'
@@ -13,25 +13,25 @@ import { performance } from 'node:perf_hooks'
 import { readFileSync } from 'node:fs'
 import { amount as physicalCpuCount } from './physicalCpuCount'
 import {
-  ReadyMessage,
-  RequestMessage,
-  ResponseMessage,
-  StartupMessage,
+  type ReadyMessage,
+  type RequestMessage,
+  type ResponseMessage,
+  type StartupMessage,
   kResponseCountField,
   kRequestCountField,
   kFieldCount,
-  Transferable,
-  Task,
-  TaskQueue,
+  type Transferable,
+  type Task,
+  type TaskQueue,
   kQueueOptions,
   isTransferable,
   markMovable,
   isMovable,
   kTransferable,
   kValue,
-  TinypoolData,
-  TinypoolWorker,
-  TinypoolChannel,
+  type TinypoolData,
+  type TinypoolWorker,
+  type TinypoolChannel,
 } from './common'
 import ThreadWorker from './runtime/thread-worker'
 import ProcessWorker from './runtime/process-worker'
