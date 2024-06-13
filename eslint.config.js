@@ -28,6 +28,12 @@ export default defineConfig([
         process: 'readonly',
       },
     },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^_' },
+      ],
+    },
   },
   {
     plugins: { unicorn: eslintPluginUnicorn },
@@ -36,7 +42,6 @@ export default defineConfig([
   {
     // TODO: Must-have rules. Enable one-by-one
     rules: {
-      '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/no-misused-promises': 'off',

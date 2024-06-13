@@ -2,8 +2,6 @@ import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
 import { fileURLToPath } from 'node:url'
 import { once } from 'node:events'
-const sleep = async (num: number) =>
-  await new Promise((res) => setTimeout(res, num))
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
