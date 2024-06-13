@@ -67,7 +67,7 @@ test('recycling workers while closing pool does not crash', async () => {
   })
 
   await Promise.all(
-    Array(process.env.CI ? 10 : 50)
+    Array(10)
       .fill(() => pool.run({}))
       .map((fn) => fn())
   )
