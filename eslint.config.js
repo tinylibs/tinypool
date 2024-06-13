@@ -41,7 +41,6 @@ export default defineConfig([
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
       'no-constant-condition': 'off',
-      'prefer-const': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/ban-types': 'off',
     },
