@@ -40,7 +40,7 @@
     "build": "tsup",
     "publish": "clean-publish",
     "prepare": "husky install",
-    "lint": "eslint"
+    "lint": "eslint --max-warnings=0"
   },
   "devDependencies": {
     "@types/node": "^20.12.8",

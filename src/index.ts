@@ -365,7 +365,7 @@ abstract class AsynchronouslyCreatedResource {
 }
 
 class AsynchronouslyCreatedResourcePool<
-  T extends AsynchronouslyCreatedResource
+  T extends AsynchronouslyCreatedResource,
 > {
   pendingItems = new Set<T>()
   readyItems = new Set<T>()
@@ -447,7 +447,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   workerId: number
   freeWorkerId: () => void
   taskInfos: Map<number, TaskInfo>
-  idleTimeout: NodeJS.Timeout | null = null // eslint-disable-line no-undef
+  idleTimeout: NodeJS.Timeout | null = null
   port: MessagePort
   sharedBuffer: Int32Array
   lastSeenResponseCount: number = 0
@@ -897,7 +897,7 @@ class ThreadPool {
 
     let resolve: (result: any) => void
     let reject: (err: Error) => void
-    // eslint-disable-next-line
+
     const ret = new Promise((res, rej) => {
       resolve = res
       reject = rej
