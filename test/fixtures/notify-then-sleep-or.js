@@ -6,5 +6,5 @@ export default function ({ i32array, index }) {
     const v = Atomics.load(i32array, 0)
     if (!(v & (1 << index))) break
     Atomics.wait(i32array, 0, v)
-  } while (true)
+  } while (true) // eslint-disable-line no-constant-condition -- intentional
 }
