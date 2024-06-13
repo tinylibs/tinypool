@@ -67,9 +67,6 @@ export default defineConfig([
   },
   { ignores: ['dist'] },
   eslintPluginPrettierRecommended,
-
-  // TODO: Must-have rules. Enable one-by-one
-  { rules: { 'prettier/prettier': 'off' } },
 ])
 
 /** @param config {import('eslint').Linter.FlatConfig} */

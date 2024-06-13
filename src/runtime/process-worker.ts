@@ -67,7 +67,7 @@ export default class ProcessWorker implements TinypoolWorker {
     })
   }
 
-  private send(message: Parameters<NonNullable<typeof process['send']>>[0]) {
+  private send(message: Parameters<NonNullable<(typeof process)['send']>>[0]) {
     if (!this.isTerminating) {
       this.process.send(message)
     }

@@ -36,7 +36,7 @@ export interface TinypoolWorker {
  *   these messages and ignore them.
  */
 export interface TinypoolWorkerMessage<
-  T extends 'port' | 'pool' = 'port' | 'pool'
+  T extends 'port' | 'pool' = 'port' | 'pool',
 > {
   __tinypool_worker_message__: true
   source: T

@@ -62,7 +62,7 @@ test('using parentPort is treated as an error', async () => {
     pool.run(`
     (async () => {
       console.log();
-      const parentPort = (await import('worker_threads')).parentPort; 
+      const parentPort = (await import('worker_threads')).parentPort;
       parentPort.postMessage("some message");
       new Promise(() => {}) /* act as if we were doing some work */
     })()
