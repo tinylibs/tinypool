@@ -30,8 +30,6 @@ export async function getHandler(
   }
 
   try {
-    // With our current set of TypeScript options, this is transpiled to
-    // `require(filename)`.
     const handlerModule = await import(filename)
 
     // Check if the default export is an object, because dynamic import
@@ -43,7 +41,9 @@ export async function getHandler(
     if (typeof handler !== 'function') {
       handler = await (handler as any)[name]
     }
-  } catch {}
+  } catch {
+    // Ignore error and retry import
+  }
   if (typeof handler !== 'function') {
     handler = await getImportESM()(pathToFileURL(filename).href)
     if (typeof handler !== 'function') {
