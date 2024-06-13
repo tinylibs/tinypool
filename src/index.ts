@@ -2,15 +2,15 @@ import {
   MessageChannel,
   MessagePort,
   receiveMessageOnPort,
-} from 'worker_threads'
-import { once, EventEmitterAsyncResource } from 'events'
-import { AsyncResource } from 'async_hooks'
-import { fileURLToPath, URL } from 'url'
-import { join } from 'path'
-import { inspect, types } from 'util'
-import assert from 'assert'
-import { performance } from 'perf_hooks'
-import { readFileSync } from 'fs'
+} from 'node:worker_threads'
+import { once, EventEmitterAsyncResource } from 'node:events'
+import { AsyncResource } from 'node:async_hooks'
+import { fileURLToPath, URL } from 'node:url'
+import { join } from 'node:path'
+import { inspect, types } from 'node:util'
+import assert from 'node:assert'
+import { performance } from 'node:perf_hooks'
+import { readFileSync } from 'node:fs'
 import { amount as physicalCpuCount } from './physicalCpuCount'
 import {
   ReadyMessage,

@@ -1,4 +1,4 @@
-import { threadId } from 'worker_threads'
+import { threadId } from 'node:worker_threads'
 
 export default async function ([i32array, n]) {
   Atomics.add(i32array, 0, 1)

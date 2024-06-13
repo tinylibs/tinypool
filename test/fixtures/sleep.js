@@ -1,4 +1,4 @@
-import { promisify } from 'util'
+import { promisify } from 'node:util'
 const sleep = promisify(setTimeout)
 
 const buf = new Uint32Array(new SharedArrayBuffer(4))

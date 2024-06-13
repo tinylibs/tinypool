@@ -1,6 +1,6 @@
-import { dirname, resolve } from 'path'
+import { dirname, resolve } from 'node:path'
 import { Tinypool, Task, TaskQueue } from 'tinypool'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

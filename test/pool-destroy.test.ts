@@ -1,7 +1,7 @@
-import { createHook } from 'async_hooks'
-import { dirname, resolve } from 'path'
+import { createHook } from 'node:async_hooks'
+import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

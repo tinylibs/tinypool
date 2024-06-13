@@ -1,5 +1,5 @@
-import { fileURLToPath } from 'url'
-import { TransferListItem, Worker } from 'worker_threads'
+import { fileURLToPath } from 'node:url'
+import { TransferListItem, Worker } from 'node:worker_threads'
 import { TinypoolWorker } from '../common'
 
 export default class ThreadWorker implements TinypoolWorker {

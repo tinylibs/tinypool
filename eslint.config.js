@@ -36,7 +36,6 @@ export default defineConfig([
   {
     // TODO: Must-have rules. Enable one-by-one
     rules: {
-      'unicorn/prefer-node-protocol': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-floating-promises': 'off',

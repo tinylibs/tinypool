@@ -1,6 +1,6 @@
-import { ChildProcess, fork } from 'child_process'
-import { MessagePort, TransferListItem } from 'worker_threads'
-import { fileURLToPath } from 'url'
+import { ChildProcess, fork } from 'node:child_process'
+import { MessagePort, TransferListItem } from 'node:worker_threads'
+import { fileURLToPath } from 'node:url'
 import {
   TinypoolChannel,
   TinypoolWorker,

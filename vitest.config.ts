@@ -1,6 +1,6 @@
-import { dirname, resolve } from 'path'
+import { dirname, resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

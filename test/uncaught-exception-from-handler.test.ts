@@ -1,7 +1,7 @@
-import { dirname, resolve } from 'path'
+import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
-import { fileURLToPath } from 'url'
-import { once } from 'events'
+import { fileURLToPath } from 'node:url'
+import { once } from 'node:events'
 const sleep = async (num: number) =>
   await new Promise((res) => setTimeout(res, num))
 

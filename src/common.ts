@@ -1,4 +1,4 @@
-import type { MessagePort, TransferListItem } from 'worker_threads'
+import type { MessagePort, TransferListItem } from 'node:worker_threads'
 
 /** Channel for communicating between main thread and workers */
 export interface TinypoolChannel {

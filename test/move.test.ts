@@ -1,8 +1,8 @@
 import { Tinypool, isMovable, markMovable, isTransferable } from 'tinypool'
-import { types } from 'util'
-import { MessageChannel, MessagePort } from 'worker_threads'
-import { dirname, resolve } from 'path'
-import { fileURLToPath } from 'url'
+import { types } from 'node:util'
+import { MessageChannel, MessagePort } from 'node:worker_threads'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

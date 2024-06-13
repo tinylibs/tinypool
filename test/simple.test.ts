@@ -1,8 +1,8 @@
-import EventEmitter from 'events'
-import { cpus } from 'os'
-import { dirname, resolve } from 'path'
+import EventEmitter from 'node:events'
+import { cpus } from 'node:os'
+import { dirname, resolve } from 'node:path'
 import Tinypool from 'tinypool'
-import { fileURLToPath, pathToFileURL } from 'url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const sleep = async (num: number) =>

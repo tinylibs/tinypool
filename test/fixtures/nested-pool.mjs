@@ -1,4 +1,4 @@
-import { cpus } from 'os'
+import { cpus } from 'node:os'
 import { Tinypool } from 'tinypool'
 
 export default async function nestedPool() {

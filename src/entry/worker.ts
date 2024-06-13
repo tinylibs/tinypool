@@ -3,7 +3,7 @@ import {
   MessagePort,
   receiveMessageOnPort,
   workerData as tinypoolData,
-} from 'worker_threads'
+} from 'node:worker_threads'
 import {
   ReadyMessage,
   RequestMessage,
