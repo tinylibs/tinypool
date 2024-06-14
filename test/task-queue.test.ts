@@ -201,7 +201,7 @@ test('tasks can share a Worker if requested (both tests finish)', async () => {
   const buffers = [
     new Int32Array(new SharedArrayBuffer(4)),
     new Int32Array(new SharedArrayBuffer(4)),
-  ]
+  ] as const
 
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
@@ -254,8 +254,10 @@ test('custom task queue works', async () => {
 
       expect(Tinypool.queueOptionsSymbol in task).toBeTruthy()
       if ((task as any).task.a === 3) {
+        // @ts-expect-error -- intentional
         expect(task[Tinypool.queueOptionsSymbol]).toBeNull()
       } else {
+        // @ts-expect-error -- intentional
         expect(task[Tinypool.queueOptionsSymbol].option).toEqual(
           (task as any).task.a
         )
@@ -266,6 +268,8 @@ test('custom task queue works', async () => {
       const index = this.tasks.indexOf(task)
       this.tasks.splice(index, 1)
     }
+
+    cancel() {}
   }
 
   const pool = new Tinypool({
@@ -276,7 +280,7 @@ test('custom task queue works', async () => {
     minThreads: 1,
   })
 
-  function makeTask(task, option) {
+  function makeTask(task: any, option: any) {
     return { ...task, [Tinypool.queueOptionsSymbol]: { option } }
   }
 

@@ -39,7 +39,8 @@
     "dev": "tsup --watch",
     "build": "tsup",
     "publish": "clean-publish",
-    "lint": "eslint --max-warnings=0"
+    "lint": "eslint --max-warnings=0",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^20.12.8",

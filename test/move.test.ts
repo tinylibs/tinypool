@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const { transferableSymbol, valueSymbol } = Tinypool
+const transferableSymbol = Tinypool.transferableSymbol as never
+const valueSymbol = Tinypool.valueSymbol as never
 
 test('Marking an object as movable works as expected', async () => {
   const obj: any = {
@@ -24,7 +25,7 @@ test('Marking an object as movable works as expected', async () => {
 })
 
 test('Marking primitives and null works as expected', async () => {
-  expect(Tinypool.move(null)).toBe(null)
+  expect(Tinypool.move(null!)).toBe(null)
   expect(Tinypool.move(1 as any)).toBe(1)
   expect(Tinypool.move(false as any)).toBe(false)
   expect(Tinypool.move('test' as any)).toBe('test')
@@ -66,8 +67,10 @@ test('Using MessagePort works as expected', async () => {
   const mc = new MessageChannel()
   const movable = Tinypool.move(mc.port1)
   expect(isMovable(movable)).toBe(true)
-  expect(movable[valueSymbol] instanceof MessagePort).toBe(true)
-  expect(movable[transferableSymbol] instanceof MessagePort).toBe(true)
+  expect((movable[valueSymbol] as unknown) instanceof MessagePort).toBe(true)
+  expect((movable[transferableSymbol] as unknown) instanceof MessagePort).toBe(
+    true
+  )
   expect(movable[transferableSymbol]).toEqual(mc.port1)
 })
 
