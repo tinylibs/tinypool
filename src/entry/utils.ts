@@ -57,8 +57,8 @@ export async function getHandler(
   // Limit the handler cache size. This should not usually be an issue and is
   // only provided for pathological cases.
   if (handlerCache.size > 1000) {
-    // @ts-ignore
-    const [[key]] = handlerCache
+    const [handler] = handlerCache
+    const key = handler![0]
     handlerCache.delete(key)
   }
 

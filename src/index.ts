@@ -596,9 +596,9 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   isRunningAbortableTask(): boolean {
     // If there are abortable tasks, we are running one at most per Worker.
     if (this.taskInfos.size !== 1) return false
-    // @ts-ignore
-    const [[, task]] = this.taskInfos
-    return task.abortSignal !== null
+    const [first] = this.taskInfos
+    const [, task] = first || []
+    return task?.abortSignal !== null
   }
 
   currentUsage(): number {
@@ -1060,9 +1060,9 @@ class ThreadPool {
     const exitEvents: Promise<any[]>[] = []
     while (this.workers.size > 0) {
       const [workerInfo] = this.workers
-      // @ts-ignore
+      // @ts-expect-error -- TODO Fix
       exitEvents.push(once(workerInfo.worker, 'exit'))
-      // @ts-ignore
+      // @ts-expect-error -- TODO Fix
       void this._removeWorker(workerInfo)
     }
 
@@ -1088,7 +1088,7 @@ class ThreadPool {
     Array.from(this.workers).filter((workerInfo) => {
       // Remove idle workers
       if (workerInfo.currentUsage() === 0) {
-        // @ts-ignore
+        // @ts-expect-error -- TODO Fix
         exitEvents.push(once(workerInfo.worker, 'exit'))
         void this._removeWorker(workerInfo!)
       }
