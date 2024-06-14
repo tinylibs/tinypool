@@ -55,7 +55,8 @@ process.on('message', (message: IncomingMessage) => {
   }
 
   if (message.source === 'port') {
-    return onMessage(message).catch(throwInNextTick)
+    onMessage(message).catch(throwInNextTick)
+    return
   }
 
   throw new Error(`Unexpected TinypoolWorkerMessage ${JSON.stringify(message)}`)

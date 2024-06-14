@@ -9,7 +9,7 @@ test('can destroy pool while tasks are running', async () => {
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/eval.js'),
   })
-  setImmediate(() => pool.destroy())
+  setImmediate(() => void pool.destroy())
   await expect(pool.run('while(1){}')).rejects.toThrow(
     /Terminating worker thread/
   )
@@ -25,7 +25,7 @@ test('destroy after initializing should work (#43)', async () => {
     /Terminating worker thread/
   )
 
-  setImmediate(() => pool.destroy())
+  setImmediate(() => void pool.destroy())
   await promise
 })
 
