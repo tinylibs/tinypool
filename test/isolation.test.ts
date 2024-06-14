@@ -15,9 +15,7 @@ describe.each(['worker_threads', 'child_process'] as const)('%s', (runtime) => {
     })
 
     function getThreadIds() {
-      return pool.threads
-        .map((thread) => thread!.threadId)
-        .sort((a, b) => a - b)
+      return pool.threads.map((thread) => thread.threadId).sort((a, b) => a - b)
     }
 
     expect(pool.threads).toHaveLength(4)
@@ -47,9 +45,7 @@ describe.each(['worker_threads', 'child_process'] as const)('%s', (runtime) => {
     })
 
     function getThreadIds() {
-      return pool.threads
-        .map((thread) => thread!.threadId)
-        .sort((a, b) => a - b)
+      return pool.threads.map((thread) => thread.threadId).sort((a, b) => a - b)
     }
 
     expect(pool.threads).toHaveLength(4)

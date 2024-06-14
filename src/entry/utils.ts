@@ -8,6 +8,7 @@ let importESMCached: (specifier: string) => Promise<any> | undefined
 
 function getImportESM() {
   if (importESMCached === undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval -- intentional
     importESMCached = new Function(
       'specifier',
       'return import(specifier)'

@@ -58,7 +58,7 @@ test('Using TypedArray works as expected', async () => {
   const ab = new Uint8Array(5)
   const movable = Tinypool.move(ab)
   expect(isMovable(movable)).toBe(true)
-  expect((types as any).isArrayBufferView(movable[valueSymbol])).toBe(true)
+  expect(types.isArrayBufferView(movable[valueSymbol])).toBe(true)
   expect(types.isAnyArrayBuffer(movable[transferableSymbol])).toBe(true)
   expect(movable[transferableSymbol]).toEqual(ab.buffer)
 })

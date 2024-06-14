@@ -682,7 +682,6 @@ class ThreadPool {
   }
 
   _addNewWorker(): void {
-    const pool = this
     const workerIds = this.workerIds
 
     let workerId: number
@@ -722,7 +721,7 @@ class ThreadPool {
 
       // Mark worker as available if it's not about to be removed
       if (!this.shouldRecycleWorker(taskInfo)) {
-        pool.workers.maybeAvailable(workerInfo)
+        this.workers.maybeAvailable(workerInfo)
       }
 
       /* istanbul ignore if */
@@ -730,12 +729,12 @@ class ThreadPool {
         const err = new Error(
           `Unexpected message from Worker: ${inspect(message)}`
         )
-        pool.publicInterface.emit('error', err)
+        this.publicInterface.emit('error', err)
       } else {
         taskInfo.done(message.error, result)
       }
 
-      pool._processPendingMessages()
+      this._processPendingMessages()
     }
 
     const { port1, port2 } = new MessageChannel()
@@ -1090,7 +1089,7 @@ class ThreadPool {
       if (workerInfo.currentUsage() === 0) {
         // @ts-expect-error -- TODO Fix
         exitEvents.push(once(workerInfo.worker, 'exit'))
-        void this._removeWorker(workerInfo!)
+        void this._removeWorker(workerInfo)
       }
       // Mark on-going workers for recycling.
       // Note that we don't need to wait for these ones to finish
@@ -1224,7 +1223,7 @@ class Tinypool extends EventEmitterAsyncResource {
   ) {
     if (val != null && typeof val === 'object' && typeof val !== 'function') {
       if (!isTransferable(val)) {
-        if ((types as any).isArrayBufferView(val)) {
+        if (types.isArrayBufferView(val)) {
           val = new ArrayBufferViewTransferable(val as ArrayBufferView)
         } else {
           val = new DirectlyTransferable(val)

@@ -39,7 +39,7 @@ process.on('message', (message: IncomingMessage) => {
         await getHandler(filename, name)
       }
 
-      send!(
+      send(
         <OutgoingMessage>{
           ready: true,
           source: 'pool',
@@ -102,7 +102,7 @@ async function onMessage(message: IncomingMessage & { source: 'port' }) {
     }
   }
 
-  send!(response)
+  send(response)
 }
 
 function serializeError(error: unknown) {
