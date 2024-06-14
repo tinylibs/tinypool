@@ -493,7 +493,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
         )
       : null
 
-    this.worker.terminate().then(() => {
+    void this.worker.terminate().then(() => {
       if (timer !== null) {
         clearTimeout(timer)
       }
@@ -791,7 +791,7 @@ class ThreadPool {
 
       // Remove the worker from the list and potentially start a new Worker to
       // replace the current one.
-      this._removeWorker(workerInfo)
+      void this._removeWorker(workerInfo)
 
       if (workerInfo.isReady() && !this.workerFailsDuringBootstrap) {
         this._ensureMinimumWorkers()
@@ -874,7 +874,7 @@ class ThreadPool {
       workerInfo.idleTimeout = setTimeout(() => {
         assert.strictEqual(workerInfo.taskInfos.size, 0)
         if (this.workers.size > this.options.minThreads) {
-          this._removeWorker(workerInfo)
+          void this._removeWorker(workerInfo)
         }
       }, this.options.idleTimeout).unref()
     }
@@ -942,7 +942,7 @@ class ThreadPool {
 
         if (taskInfo.workerInfo !== null) {
           // Already running: We cancel the Worker this is running on.
-          this._removeWorker(taskInfo.workerInfo)
+          void this._removeWorker(taskInfo.workerInfo)
           this._ensureMinimumWorkers()
         } else {
           // Not yet running: Remove it from the queue.
@@ -1063,7 +1063,7 @@ class ThreadPool {
       // @ts-ignore
       exitEvents.push(once(workerInfo.worker, 'exit'))
       // @ts-ignore
-      this._removeWorker(workerInfo)
+      void this._removeWorker(workerInfo)
     }
 
     await Promise.all(exitEvents)
@@ -1090,7 +1090,7 @@ class ThreadPool {
       if (workerInfo.currentUsage() === 0) {
         // @ts-ignore
         exitEvents.push(once(workerInfo.worker, 'exit'))
-        this._removeWorker(workerInfo!)
+        void this._removeWorker(workerInfo!)
       }
       // Mark on-going workers for recycling.
       // Note that we don't need to wait for these ones to finish

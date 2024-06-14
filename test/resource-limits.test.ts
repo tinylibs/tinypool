@@ -31,7 +31,7 @@ test('resourceLimits causes task to reject', async () => {
   expect(limits.maxOldGenerationSizeMb).toBe(4)
   expect(limits.maxYoungGenerationSizeMb).toBe(2)
   expect(limits.codeRangeSizeMb).toBe(4)
-  expect(worker.run(null)).rejects.toThrow(
+  await expect(worker.run(null)).rejects.toThrow(
     /Worker terminated due to reaching memory limit: JS heap out of memory/
   )
 })

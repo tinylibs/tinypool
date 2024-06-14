@@ -10,7 +10,7 @@ test('uncaught exception resets Worker', async () => {
     filename: resolve(__dirname, 'fixtures/eval.js'),
   })
 
-  expect(pool.run('throw new Error("not_caught")')).rejects.toThrow(
+  await expect(pool.run('throw new Error("not_caught")')).rejects.toThrow(
     /not_caught/
   )
 })

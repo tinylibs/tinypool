@@ -56,7 +56,6 @@ export default defineConfig([
   {
     // TODO: Must-have rules. Enable one-by-one
     rules: {
-      '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/ban-types': 'off',

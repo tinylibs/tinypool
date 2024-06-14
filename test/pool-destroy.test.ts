@@ -10,7 +10,9 @@ test('can destroy pool while tasks are running', async () => {
     filename: resolve(__dirname, 'fixtures/eval.js'),
   })
   setImmediate(() => pool.destroy())
-  expect(pool.run('while(1){}')).rejects.toThrow(/Terminating worker thread/)
+  await expect(pool.run('while(1){}')).rejects.toThrow(
+    /Terminating worker thread/
+  )
 })
 
 test('destroy after initializing should work (#43)', async () => {
@@ -19,8 +21,12 @@ test('destroy after initializing should work (#43)', async () => {
     isolateWorkers: true,
   })
 
-  expect(pool.run({})).rejects.toThrow(/Terminating worker thread/)
+  const promise = expect(pool.run({})).rejects.toThrow(
+    /Terminating worker thread/
+  )
+
   setImmediate(() => pool.destroy())
+  await promise
 })
 
 test('cleans up async resources', async () => {

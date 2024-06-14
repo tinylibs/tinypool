@@ -56,30 +56,44 @@ test('will reject items over task queue limit', async () => {
     maxThreads: 1,
     maxQueue: 2,
   })
+  const promises: Promise<void>[] = []
 
   expect(pool.threads.length).toBe(0)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
+
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(1)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(2)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(/Task queue is at limit/)
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Task queue is at limit/
+    )
+  )
+
   await pool.destroy()
+  await Promise.all(promises)
 })
 
 test('will reject items when task queue is unavailable', async () => {
@@ -89,20 +103,27 @@ test('will reject items when task queue is unavailable', async () => {
     maxThreads: 1,
     maxQueue: 0,
   })
+  const promises: Promise<void>[] = []
 
   expect(pool.threads.length).toBe(0)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /No task queue available and all Workers are busy/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /No task queue available and all Workers are busy/
+    )
   )
+
   await pool.destroy()
+  await Promise.all(promises)
 })
 
 test('will reject items when task queue is unavailable (fixed thread count)', async () => {
@@ -112,20 +133,27 @@ test('will reject items when task queue is unavailable (fixed thread count)', as
     maxThreads: 1,
     maxQueue: 0,
   })
+  const promises: Promise<void>[] = []
 
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /No task queue available and all Workers are busy/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /No task queue available and all Workers are busy/
+    )
   )
+
   await pool.destroy()
+  await Promise.all(promises)
 })
 
 test('tasks can share a Worker if requested (both tests blocking)', async () => {
@@ -136,23 +164,29 @@ test('tasks can share a Worker if requested (both tests blocking)', async () => 
     maxQueue: 0,
     concurrentTasksPerWorker: 2,
   })
+  const promises: Promise<void>[] = []
 
   expect(pool.threads.length).toBe(0)
   expect(pool.queueSize).toBe(0)
 
-  expect(
-    pool.run(new Int32Array(new SharedArrayBuffer(4)))
-  ).rejects.toBeTruthy()
+  promises.push(
+    expect(
+      pool.run(new Int32Array(new SharedArrayBuffer(4)))
+    ).rejects.toBeTruthy()
+  )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(
-    pool.run(new Int32Array(new SharedArrayBuffer(4)))
-  ).rejects.toBeTruthy()
+  promises.push(
+    expect(
+      pool.run(new Int32Array(new SharedArrayBuffer(4)))
+    ).rejects.toBeTruthy()
+  )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
   await pool.destroy()
+  await Promise.all(promises)
 })
 
 test('tasks can share a Worker if requested (both tests finish)', async () => {

@@ -11,7 +11,7 @@ export default async function nestedPool() {
   })
 
   await Promise.resolve()
-  pool.recycleWorkers()
+  void pool.recycleWorkers()
 }
 
 export function entrypoint() {}
