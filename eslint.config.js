@@ -28,7 +28,9 @@ export default defineConfig([
         process: 'readonly',
       },
     },
+    plugins: { unicorn: eslintPluginUnicorn },
     rules: {
+      'unicorn/prefer-node-protocol': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { varsIgnorePattern: '^_' },
@@ -41,21 +43,8 @@ export default defineConfig([
           disallowTypeAnnotations: false,
         },
       ],
-    },
-  },
-  {
-    files: ['**/*.test.ts'],
-    rules: {
-      '@typescript-eslint/require-await': 'off',
-    },
-  },
-  {
-    plugins: { unicorn: eslintPluginUnicorn },
-    rules: { 'unicorn/prefer-node-protocol': 'error' },
-  },
-  {
-    // TODO: Nice-to-have rules
-    rules: {
+
+      // TODO: Nice-to-have rules
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
@@ -68,6 +57,12 @@ export default defineConfig([
       '@typescript-eslint/no-non-null-asserted-optional-chain': 'off',
       '@typescript-eslint/no-namespace': 'off',
       '@typescript-eslint/no-implied-eval': 'off',
+    },
+  },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
     },
   },
   { ignores: ['dist'] },
