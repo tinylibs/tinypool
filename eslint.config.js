@@ -54,12 +54,6 @@ export default defineConfig([
     rules: { 'unicorn/prefer-node-protocol': 'error' },
   },
   {
-    // TODO: Must-have rules. Enable one-by-one
-    rules: {
-      '@typescript-eslint/ban-types': 'off',
-    },
-  },
-  {
     // TODO: Nice-to-have rules
     rules: {
       '@typescript-eslint/no-unsafe-argument': 'off',

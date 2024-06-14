@@ -101,7 +101,7 @@ type ResourceLimits = Worker extends {
   resourceLimits?: infer T
 }
   ? T
-  : {}
+  : object
 
 class ArrayTaskQueue implements TaskQueue {
   tasks: Task[] = []

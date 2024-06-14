@@ -16,14 +16,16 @@ function getImportESM() {
   return importESMCached
 }
 
-const handlerCache: Map<string, Function> = new Map()
+// eslint-disable-next-line @typescript-eslint/ban-types -- Intentional general type
+type Handler = Function
+const handlerCache: Map<string, Handler> = new Map()
 
 // Look up the handler function that we call when a task is posted.
 // This is either going to be "the" export from a file, or the default export.
 export async function getHandler(
   filename: string,
   name: string
-): Promise<Function | null> {
+): Promise<Handler | null> {
   let handler = handlerCache.get(`${filename}/${name}`)
   if (handler !== undefined) {
     return handler
