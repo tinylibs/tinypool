@@ -44,13 +44,18 @@ export default defineConfig([
     },
   },
   {
+    files: ['**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+  {
     plugins: { unicorn: eslintPluginUnicorn },
     rules: { 'unicorn/prefer-node-protocol': 'error' },
   },
   {
     // TODO: Must-have rules. Enable one-by-one
     rules: {
-      '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',

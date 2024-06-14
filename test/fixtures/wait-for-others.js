@@ -1,6 +1,6 @@
 import { threadId } from 'node:worker_threads'
 
-export default async function ([i32array, n]) {
+export default function ([i32array, n]) {
   Atomics.add(i32array, 0, 1)
   Atomics.notify(i32array, 0, Infinity)
   let lastSeenValue
