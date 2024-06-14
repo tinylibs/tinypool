@@ -1,10 +1,10 @@
 import { stderr, stdout } from '../utils'
 import {
-  ReadyMessage,
-  RequestMessage,
-  ResponseMessage,
-  StartupMessage,
-  TinypoolWorkerMessage,
+  type ReadyMessage,
+  type RequestMessage,
+  type ResponseMessage,
+  type StartupMessage,
+  type TinypoolWorkerMessage,
 } from '../common'
 import { getHandler, throwInNextTick } from './utils'
 
@@ -39,7 +39,7 @@ process.on('message', (message: IncomingMessage) => {
         await getHandler(filename, name)
       }
 
-      send!(
+      send(
         <OutgoingMessage>{
           ready: true,
           source: 'pool',
@@ -55,7 +55,8 @@ process.on('message', (message: IncomingMessage) => {
   }
 
   if (message.source === 'port') {
-    return onMessage(message).catch(throwInNextTick)
+    onMessage(message).catch(throwInNextTick)
+    return
   }
 
   throw new Error(`Unexpected TinypoolWorkerMessage ${JSON.stringify(message)}`)
@@ -101,7 +102,7 @@ async function onMessage(message: IncomingMessage & { source: 'port' }) {
     }
   }
 
-  send!(response)
+  send(response)
 }
 
 function serializeError(error: unknown) {

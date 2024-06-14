@@ -1,7 +1,7 @@
-import * as path from 'path'
-import { fileURLToPath } from 'url'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Tinypool } from 'tinypool'
-import EventEmitter from 'events'
+import EventEmitter from 'node:events'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 

@@ -1,6 +1,7 @@
 /** Enable to see memory leak logging */
 const logOutput = false
 
+// eslint-disable-next-line prefer-const -- intentional
 export let leaks = []
 
 /**

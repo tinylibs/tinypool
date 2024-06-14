@@ -1,6 +1,6 @@
-import { dirname, resolve } from 'path'
-import { Tinypool, Task, TaskQueue } from 'tinypool'
-import { fileURLToPath } from 'url'
+import { dirname, resolve } from 'node:path'
+import { Tinypool, type Task, type TaskQueue } from 'tinypool'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -56,30 +56,44 @@ test('will reject items over task queue limit', async () => {
     maxThreads: 1,
     maxQueue: 2,
   })
+  const promises: Promise<void>[] = []
 
   expect(pool.threads.length).toBe(0)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
+
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(1)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(2)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(/Task queue is at limit/)
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Task queue is at limit/
+    )
+  )
+
   await pool.destroy()
+  await Promise.all(promises)
 })
 
 test('will reject items when task queue is unavailable', async () => {
@@ -89,20 +103,27 @@ test('will reject items when task queue is unavailable', async () => {
     maxThreads: 1,
     maxQueue: 0,
   })
+  const promises: Promise<void>[] = []
 
   expect(pool.threads.length).toBe(0)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /No task queue available and all Workers are busy/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /No task queue available and all Workers are busy/
+    )
   )
+
   await pool.destroy()
+  await Promise.all(promises)
 })
 
 test('will reject items when task queue is unavailable (fixed thread count)', async () => {
@@ -112,20 +133,27 @@ test('will reject items when task queue is unavailable (fixed thread count)', as
     maxThreads: 1,
     maxQueue: 0,
   })
+  const promises: Promise<void>[] = []
 
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /Terminating worker thread/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /Terminating worker thread/
+    )
   )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(pool.run('while (true) {}')).rejects.toThrow(
-    /No task queue available and all Workers are busy/
+  promises.push(
+    expect(pool.run('while (true) {}')).rejects.toThrow(
+      /No task queue available and all Workers are busy/
+    )
   )
+
   await pool.destroy()
+  await Promise.all(promises)
 })
 
 test('tasks can share a Worker if requested (both tests blocking)', async () => {
@@ -136,23 +164,29 @@ test('tasks can share a Worker if requested (both tests blocking)', async () => 
     maxQueue: 0,
     concurrentTasksPerWorker: 2,
   })
+  const promises: Promise<void>[] = []
 
   expect(pool.threads.length).toBe(0)
   expect(pool.queueSize).toBe(0)
 
-  expect(
-    pool.run(new Int32Array(new SharedArrayBuffer(4)))
-  ).rejects.toBeTruthy()
+  promises.push(
+    expect(
+      pool.run(new Int32Array(new SharedArrayBuffer(4)))
+    ).rejects.toBeTruthy()
+  )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
-  expect(
-    pool.run(new Int32Array(new SharedArrayBuffer(4)))
-  ).rejects.toBeTruthy()
+  promises.push(
+    expect(
+      pool.run(new Int32Array(new SharedArrayBuffer(4)))
+    ).rejects.toBeTruthy()
+  )
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
 
   await pool.destroy()
+  await Promise.all(promises)
 })
 
 test('tasks can share a Worker if requested (both tests finish)', async () => {
@@ -167,7 +201,7 @@ test('tasks can share a Worker if requested (both tests finish)', async () => {
   const buffers = [
     new Int32Array(new SharedArrayBuffer(4)),
     new Int32Array(new SharedArrayBuffer(4)),
-  ]
+  ] as const
 
   expect(pool.threads.length).toBe(1)
   expect(pool.queueSize).toBe(0)
@@ -220,8 +254,10 @@ test('custom task queue works', async () => {
 
       expect(Tinypool.queueOptionsSymbol in task).toBeTruthy()
       if ((task as any).task.a === 3) {
+        // @ts-expect-error -- intentional
         expect(task[Tinypool.queueOptionsSymbol]).toBeNull()
       } else {
+        // @ts-expect-error -- intentional
         expect(task[Tinypool.queueOptionsSymbol].option).toEqual(
           (task as any).task.a
         )
@@ -232,6 +268,8 @@ test('custom task queue works', async () => {
       const index = this.tasks.indexOf(task)
       this.tasks.splice(index, 1)
     }
+
+    cancel() {}
   }
 
   const pool = new Tinypool({
@@ -242,7 +280,7 @@ test('custom task queue works', async () => {
     minThreads: 1,
   })
 
-  function makeTask(task, option) {
+  function makeTask(task: any, option: any) {
     return { ...task, [Tinypool.queueOptionsSymbol]: { option } }
   }
 

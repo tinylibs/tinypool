@@ -1,6 +1,6 @@
 import Tinypool from '../../dist/index.js'
-import assert from 'assert'
-import { types } from 'util'
+import assert from 'node:assert'
+import { types } from 'node:util'
 
 export default function (moved) {
   if (moved !== undefined) {

@@ -1,10 +1,10 @@
-import { ChildProcess, fork } from 'child_process'
-import { MessagePort, TransferListItem } from 'worker_threads'
-import { fileURLToPath } from 'url'
+import { type ChildProcess, fork } from 'node:child_process'
+import { MessagePort, type TransferListItem } from 'node:worker_threads'
+import { fileURLToPath } from 'node:url'
 import {
-  TinypoolChannel,
-  TinypoolWorker,
-  TinypoolWorkerMessage,
+  type TinypoolChannel,
+  type TinypoolWorker,
+  type TinypoolWorkerMessage,
 } from '../common'
 
 const __tinypool_worker_message__ = true
@@ -67,7 +67,7 @@ export default class ProcessWorker implements TinypoolWorker {
     })
   }
 
-  private send(message: Parameters<NonNullable<typeof process['send']>>[0]) {
+  private send(message: Parameters<NonNullable<(typeof process)['send']>>[0]) {
     if (!this.isTerminating) {
       this.process.send(message)
     }

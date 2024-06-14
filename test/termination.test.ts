@@ -1,6 +1,6 @@
-import { dirname, resolve } from 'path'
+import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const cleanups: (() => Promise<unknown>)[] = []
@@ -67,7 +67,7 @@ test('recycling workers while closing pool does not crash', async () => {
   })
 
   await Promise.all(
-    Array(process.env.CI ? 10 : 50)
+    (Array(10) as (() => Promise<any>)[])
       .fill(() => pool.run({}))
       .map((fn) => fn())
   )

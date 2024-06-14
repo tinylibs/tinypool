@@ -1,7 +1,7 @@
-import { promisify } from 'util'
-import { dirname, resolve } from 'path'
+import { promisify } from 'node:util'
+import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const delay = promisify(setTimeout)

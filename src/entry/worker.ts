@@ -1,15 +1,15 @@
 import {
   parentPort,
-  MessagePort,
+  type MessagePort,
   receiveMessageOnPort,
   workerData as tinypoolData,
-} from 'worker_threads'
+} from 'node:worker_threads'
 import {
-  ReadyMessage,
-  RequestMessage,
-  ResponseMessage,
-  StartupMessage,
-  TinypoolData,
+  type ReadyMessage,
+  type RequestMessage,
+  type ResponseMessage,
+  type StartupMessage,
+  type TinypoolData,
   kResponseCountField,
   kRequestCountField,
   isMovable,

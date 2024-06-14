@@ -1,7 +1,7 @@
-import { createHook } from 'async_hooks'
-import { dirname, resolve } from 'path'
+import { createHook } from 'node:async_hooks'
+import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -9,8 +9,10 @@ test('can destroy pool while tasks are running', async () => {
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/eval.js'),
   })
-  setImmediate(() => pool.destroy())
-  expect(pool.run('while(1){}')).rejects.toThrow(/Terminating worker thread/)
+  setImmediate(() => void pool.destroy())
+  await expect(pool.run('while(1){}')).rejects.toThrow(
+    /Terminating worker thread/
+  )
 })
 
 test('destroy after initializing should work (#43)', async () => {
@@ -19,8 +21,12 @@ test('destroy after initializing should work (#43)', async () => {
     isolateWorkers: true,
   })
 
-  expect(pool.run({})).rejects.toThrow(/Terminating worker thread/)
-  setImmediate(() => pool.destroy())
+  const promise = expect(pool.run({})).rejects.toThrow(
+    /Terminating worker thread/
+  )
+
+  setImmediate(() => void pool.destroy())
+  await promise
 })
 
 test('cleans up async resources', async () => {

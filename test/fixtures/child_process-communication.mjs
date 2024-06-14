@@ -1,5 +1,5 @@
 export default async function run() {
-  let resolve
+  let resolve = () => {}
   const promise = new Promise((r) => (resolve = r))
 
   process.send('Child process started')

@@ -1,6 +1,6 @@
-import { dirname, resolve } from 'path'
+import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
-import { fileURLToPath } from 'url'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -15,9 +15,7 @@ describe.each(['worker_threads', 'child_process'] as const)('%s', (runtime) => {
     })
 
     function getThreadIds() {
-      return pool.threads
-        .map((thread) => thread!.threadId)
-        .sort((a, b) => a - b)
+      return pool.threads.map((thread) => thread.threadId).sort((a, b) => a - b)
     }
 
     expect(pool.threads).toHaveLength(4)
@@ -47,9 +45,7 @@ describe.each(['worker_threads', 'child_process'] as const)('%s', (runtime) => {
     })
 
     function getThreadIds() {
-      return pool.threads
-        .map((thread) => thread!.threadId)
-        .sort((a, b) => a - b)
+      return pool.threads.map((thread) => thread.threadId).sort((a, b) => a - b)
     }
 
     expect(pool.threads).toHaveLength(4)

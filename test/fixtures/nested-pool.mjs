@@ -1,4 +1,4 @@
-import { cpus } from 'os'
+import { cpus } from 'node:os'
 import { Tinypool } from 'tinypool'
 
 export default async function nestedPool() {
@@ -11,7 +11,7 @@ export default async function nestedPool() {
   })
 
   await Promise.resolve()
-  pool.recycleWorkers()
+  void pool.recycleWorkers()
 }
 
 export function entrypoint() {}

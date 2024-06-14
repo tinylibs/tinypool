@@ -1,12 +1,13 @@
 import { Tinypool, isMovable, markMovable, isTransferable } from 'tinypool'
-import { types } from 'util'
-import { MessageChannel, MessagePort } from 'worker_threads'
-import { dirname, resolve } from 'path'
-import { fileURLToPath } from 'url'
+import { types } from 'node:util'
+import { MessageChannel, MessagePort } from 'node:worker_threads'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const { transferableSymbol, valueSymbol } = Tinypool
+const transferableSymbol = Tinypool.transferableSymbol as never
+const valueSymbol = Tinypool.valueSymbol as never
 
 test('Marking an object as movable works as expected', async () => {
   const obj: any = {
@@ -24,7 +25,7 @@ test('Marking an object as movable works as expected', async () => {
 })
 
 test('Marking primitives and null works as expected', async () => {
-  expect(Tinypool.move(null)).toBe(null)
+  expect(Tinypool.move(null!)).toBe(null)
   expect(Tinypool.move(1 as any)).toBe(1)
   expect(Tinypool.move(false as any)).toBe(false)
   expect(Tinypool.move('test' as any)).toBe('test')
@@ -57,7 +58,7 @@ test('Using TypedArray works as expected', async () => {
   const ab = new Uint8Array(5)
   const movable = Tinypool.move(ab)
   expect(isMovable(movable)).toBe(true)
-  expect((types as any).isArrayBufferView(movable[valueSymbol])).toBe(true)
+  expect(types.isArrayBufferView(movable[valueSymbol])).toBe(true)
   expect(types.isAnyArrayBuffer(movable[transferableSymbol])).toBe(true)
   expect(movable[transferableSymbol]).toEqual(ab.buffer)
 })
@@ -66,8 +67,10 @@ test('Using MessagePort works as expected', async () => {
   const mc = new MessageChannel()
   const movable = Tinypool.move(mc.port1)
   expect(isMovable(movable)).toBe(true)
-  expect(movable[valueSymbol] instanceof MessagePort).toBe(true)
-  expect(movable[transferableSymbol] instanceof MessagePort).toBe(true)
+  expect((movable[valueSymbol] as unknown) instanceof MessagePort).toBe(true)
+  expect((movable[transferableSymbol] as unknown) instanceof MessagePort).toBe(
+    true
+  )
   expect(movable[transferableSymbol]).toEqual(mc.port1)
 })
 

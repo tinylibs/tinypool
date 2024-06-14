@@ -1,8 +1,8 @@
-import EventEmitter from 'events'
-import { cpus } from 'os'
-import { dirname, resolve } from 'path'
+import EventEmitter from 'node:events'
+import { cpus } from 'node:os'
+import { dirname, resolve } from 'node:path'
 import Tinypool from 'tinypool'
-import { fileURLToPath, pathToFileURL } from 'url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const sleep = async (num: number) =>
@@ -71,7 +71,7 @@ test('filename can be null when initially provided', async () => {
 
 test('filename must be provided while posting', async () => {
   const worker = new Tinypool()
-  expect(worker.run('doesn’t matter')).rejects.toThrow(
+  await expect(worker.run('doesn’t matter')).rejects.toThrow(
     /filename must be provided to run\(\) or in options object/
   )
 })
@@ -194,11 +194,11 @@ test('workerId should never be more than maxThreads=1', async () => {
     maxThreads: maxThreads,
   })
   await pool.destroy()
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
 
   await sleep(300)
 })
@@ -211,14 +211,14 @@ test('workerId should never be more than maxThreads', async () => {
     maxThreads: maxThreads,
   })
   await pool.destroy()
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
-  expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
+  await expect(pool.run({})).resolves.toBeLessThanOrEqual(maxThreads)
 
   await sleep(300)
 })

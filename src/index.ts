@@ -1,37 +1,37 @@
 import {
   MessageChannel,
-  MessagePort,
+  type MessagePort,
   receiveMessageOnPort,
-} from 'worker_threads'
-import { once, EventEmitterAsyncResource } from 'events'
-import { AsyncResource } from 'async_hooks'
-import { fileURLToPath, URL } from 'url'
-import { join } from 'path'
-import { inspect, types } from 'util'
-import assert from 'assert'
-import { performance } from 'perf_hooks'
-import { readFileSync } from 'fs'
+} from 'node:worker_threads'
+import { once, EventEmitterAsyncResource } from 'node:events'
+import { AsyncResource } from 'node:async_hooks'
+import { fileURLToPath, URL } from 'node:url'
+import { join } from 'node:path'
+import { inspect, types } from 'node:util'
+import assert from 'node:assert'
+import { performance } from 'node:perf_hooks'
+import { readFileSync } from 'node:fs'
 import { amount as physicalCpuCount } from './physicalCpuCount'
 import {
-  ReadyMessage,
-  RequestMessage,
-  ResponseMessage,
-  StartupMessage,
+  type ReadyMessage,
+  type RequestMessage,
+  type ResponseMessage,
+  type StartupMessage,
   kResponseCountField,
   kRequestCountField,
   kFieldCount,
-  Transferable,
-  Task,
-  TaskQueue,
+  type Transferable,
+  type Task,
+  type TaskQueue,
   kQueueOptions,
   isTransferable,
   markMovable,
   isMovable,
   kTransferable,
   kValue,
-  TinypoolData,
-  TinypoolWorker,
-  TinypoolChannel,
+  type TinypoolData,
+  type TinypoolWorker,
+  type TinypoolChannel,
 } from './common'
 import ThreadWorker from './runtime/thread-worker'
 import ProcessWorker from './runtime/process-worker'
@@ -101,7 +101,7 @@ type ResourceLimits = Worker extends {
   resourceLimits?: infer T
 }
   ? T
-  : {}
+  : object
 
 class ArrayTaskQueue implements TaskQueue {
   tasks: Task[] = []
@@ -365,7 +365,7 @@ abstract class AsynchronouslyCreatedResource {
 }
 
 class AsynchronouslyCreatedResourcePool<
-  T extends AsynchronouslyCreatedResource
+  T extends AsynchronouslyCreatedResource,
 > {
   pendingItems = new Set<T>()
   readyItems = new Set<T>()
@@ -447,7 +447,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   workerId: number
   freeWorkerId: () => void
   taskInfos: Map<number, TaskInfo>
-  idleTimeout: NodeJS.Timeout | null = null // eslint-disable-line no-undef
+  idleTimeout: NodeJS.Timeout | null = null
   port: MessagePort
   sharedBuffer: Int32Array
   lastSeenResponseCount: number = 0
@@ -493,7 +493,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
         )
       : null
 
-    this.worker.terminate().then(() => {
+    void this.worker.terminate().then(() => {
       if (timer !== null) {
         clearTimeout(timer)
       }
@@ -596,9 +596,9 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   isRunningAbortableTask(): boolean {
     // If there are abortable tasks, we are running one at most per Worker.
     if (this.taskInfos.size !== 1) return false
-    // @ts-ignore
-    const [[, task]] = this.taskInfos
-    return task.abortSignal !== null
+    const [first] = this.taskInfos
+    const [, task] = first || []
+    return task?.abortSignal !== null
   }
 
   currentUsage(): number {
@@ -682,7 +682,6 @@ class ThreadPool {
   }
 
   _addNewWorker(): void {
-    const pool = this
     const workerIds = this.workerIds
 
     let workerId: number
@@ -722,7 +721,7 @@ class ThreadPool {
 
       // Mark worker as available if it's not about to be removed
       if (!this.shouldRecycleWorker(taskInfo)) {
-        pool.workers.maybeAvailable(workerInfo)
+        this.workers.maybeAvailable(workerInfo)
       }
 
       /* istanbul ignore if */
@@ -730,12 +729,12 @@ class ThreadPool {
         const err = new Error(
           `Unexpected message from Worker: ${inspect(message)}`
         )
-        pool.publicInterface.emit('error', err)
+        this.publicInterface.emit('error', err)
       } else {
         taskInfo.done(message.error, result)
       }
 
-      pool._processPendingMessages()
+      this._processPendingMessages()
     }
 
     const { port1, port2 } = new MessageChannel()
@@ -791,7 +790,7 @@ class ThreadPool {
 
       // Remove the worker from the list and potentially start a new Worker to
       // replace the current one.
-      this._removeWorker(workerInfo)
+      void this._removeWorker(workerInfo)
 
       if (workerInfo.isReady() && !this.workerFailsDuringBootstrap) {
         this._ensureMinimumWorkers()
@@ -874,7 +873,7 @@ class ThreadPool {
       workerInfo.idleTimeout = setTimeout(() => {
         assert.strictEqual(workerInfo.taskInfos.size, 0)
         if (this.workers.size > this.options.minThreads) {
-          this._removeWorker(workerInfo)
+          void this._removeWorker(workerInfo)
         }
       }, this.options.idleTimeout).unref()
     }
@@ -897,7 +896,7 @@ class ThreadPool {
 
     let resolve: (result: any) => void
     let reject: (err: Error) => void
-    // eslint-disable-next-line
+
     const ret = new Promise((res, rej) => {
       resolve = res
       reject = rej
@@ -942,7 +941,7 @@ class ThreadPool {
 
         if (taskInfo.workerInfo !== null) {
           // Already running: We cancel the Worker this is running on.
-          this._removeWorker(taskInfo.workerInfo)
+          void this._removeWorker(taskInfo.workerInfo)
           this._ensureMinimumWorkers()
         } else {
           // Not yet running: Remove it from the queue.
@@ -1060,10 +1059,10 @@ class ThreadPool {
     const exitEvents: Promise<any[]>[] = []
     while (this.workers.size > 0) {
       const [workerInfo] = this.workers
-      // @ts-ignore
+      // @ts-expect-error -- TODO Fix
       exitEvents.push(once(workerInfo.worker, 'exit'))
-      // @ts-ignore
-      this._removeWorker(workerInfo)
+      // @ts-expect-error -- TODO Fix
+      void this._removeWorker(workerInfo)
     }
 
     await Promise.all(exitEvents)
@@ -1088,9 +1087,9 @@ class ThreadPool {
     Array.from(this.workers).filter((workerInfo) => {
       // Remove idle workers
       if (workerInfo.currentUsage() === 0) {
-        // @ts-ignore
+        // @ts-expect-error -- TODO Fix
         exitEvents.push(once(workerInfo.worker, 'exit'))
-        this._removeWorker(workerInfo!)
+        void this._removeWorker(workerInfo)
       }
       // Mark on-going workers for recycling.
       // Note that we don't need to wait for these ones to finish
@@ -1224,7 +1223,7 @@ class Tinypool extends EventEmitterAsyncResource {
   ) {
     if (val != null && typeof val === 'object' && typeof val !== 'function') {
       if (!isTransferable(val)) {
-        if ((types as any).isArrayBufferView(val)) {
+        if (types.isArrayBufferView(val)) {
           val = new ArrayBufferViewTransferable(val as ArrayBufferView)
         } else {
           val = new DirectlyTransferable(val)

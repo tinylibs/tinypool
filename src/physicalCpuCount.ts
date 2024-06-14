@@ -1,6 +1,6 @@
 // https://www.npmjs.com/package/physical-cpu-count in ESM
-import os from 'os'
-import childProcess from 'child_process'
+import os from 'node:os'
+import childProcess from 'node:child_process'
 
 function exec(command: string) {
   const output = childProcess.execSync(command, {

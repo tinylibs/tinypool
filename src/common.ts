@@ -1,4 +1,4 @@
-import type { MessagePort, TransferListItem } from 'worker_threads'
+import type { MessagePort, TransferListItem } from 'node:worker_threads'
 
 /** Channel for communicating between main thread and workers */
 export interface TinypoolChannel {
@@ -36,7 +36,7 @@ export interface TinypoolWorker {
  *   these messages and ignore them.
  */
 export interface TinypoolWorkerMessage<
-  T extends 'port' | 'pool' = 'port' | 'pool'
+  T extends 'port' | 'pool' = 'port' | 'pool',
 > {
   __tinypool_worker_message__: true
   source: T
