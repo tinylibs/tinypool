@@ -46,7 +46,7 @@ test('uncaught exception in immediate after task yields error event', async () =
 
   // Hack a bit to make sure we get the 'exit'/'error' events.
   expect(pool.threads.length).toBe(1)
-  pool.threads[0]!.ref?.()
+  pool.threads[0]!.ref!()
 
   // This is the main aassertion here.
   expect((await errorEvent)[0]!.message).toEqual('not_caught')

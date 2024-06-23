@@ -1,10 +1,13 @@
 import { type ChildProcess, fork } from 'node:child_process'
-import { MessagePort, type TransferListItem } from 'node:worker_threads'
 import { fileURLToPath } from 'node:url'
 import {
+  type RequestMessage,
+  type ReadyMessage,
+  type StartupMessage,
   type TinypoolChannel,
   type TinypoolWorker,
   type TinypoolWorkerMessage,
+  type ResponseMessage,
 } from '../common'
 
 const __tinypool_worker_message__ = true
@@ -15,7 +18,6 @@ export default class ProcessWorker implements TinypoolWorker {
   runtime = 'child_process'
   process!: ChildProcess
   threadId!: number
-  port?: MessagePort
   channel?: TinypoolChannel
   waitForExit!: Promise<void>
   isTerminating = false
@@ -36,6 +38,12 @@ export default class ProcessWorker implements TinypoolWorker {
 
     this.process.on('exit', this.onUnexpectedExit)
     this.waitForExit = new Promise((r) => this.process.on('exit', r))
+
+    this.process.on('message', (data: TinypoolWorkerMessage) => {
+      if (!data || !data.__tinypool_worker_message__) {
+        return this.channel?.postMessage(data)
+      }
+    })
   }
 
   onUnexpectedExit = () => {
@@ -54,7 +62,6 @@ export default class ProcessWorker implements TinypoolWorker {
     this.process.kill()
     await this.waitForExit
 
-    this.port?.close()
     clearTimeout(sigkillTimeout)
   }
 
@@ -73,24 +80,7 @@ export default class ProcessWorker implements TinypoolWorker {
     }
   }
 
-  postMessage(message: any, transferListItem?: Readonly<TransferListItem[]>) {
-    transferListItem?.forEach((item) => {
-      if (item instanceof MessagePort) {
-        this.port = item
-      }
-    })
-
-    // Mirror port's messages to process
-    if (this.port) {
-      this.port.on('message', (message) =>
-        this.send(<TinypoolWorkerMessage<'port'>>{
-          ...message,
-          source: 'port',
-          __tinypool_worker_message__,
-        })
-      )
-    }
-
+  initializeWorker(message: StartupMessage) {
     return this.send(<TinypoolWorkerMessage<'pool'>>{
       ...message,
       source: 'pool',
@@ -98,31 +88,56 @@ export default class ProcessWorker implements TinypoolWorker {
     })
   }
 
-  on(event: string, callback: (...args: any[]) => void) {
-    return this.process.on(event, (data: TinypoolWorkerMessage) => {
-      // All errors should be forwarded to the pool
-      if (event === 'error') {
-        return callback(data)
-      }
-
-      if (!data || !data.__tinypool_worker_message__) {
-        return this.channel?.postMessage(data)
-      }
-
-      if (data.source === 'pool') {
-        callback(data)
-      } else if (data.source === 'port') {
-        this.port!.postMessage(data)
-      }
+  runTask(message: RequestMessage): void {
+    return this.send(<TinypoolWorkerMessage<'port'>>{
+      ...message,
+      source: 'port',
+      __tinypool_worker_message__,
     })
   }
 
-  once(event: string, callback: (...args: any[]) => void) {
-    return this.process.once(event, callback)
+  onReady(callback: (...args: any[]) => void) {
+    return this.process.on(
+      'message',
+      (data: TinypoolWorkerMessage & ReadyMessage) => {
+        if (
+          data.__tinypool_worker_message__ === true &&
+          data.source === 'pool' &&
+          data.ready === true
+        ) {
+          callback()
+        }
+      }
+    )
   }
 
-  emit(event: string, ...data: any[]) {
-    return this.process.emit(event, ...data)
+  onTaskFinished(callback: (...args: any[]) => void) {
+    return this.process.on(
+      'message',
+      (data: TinypoolWorkerMessage & ResponseMessage) => {
+        if (
+          data.__tinypool_worker_message__ === true &&
+          data.source === 'port'
+        ) {
+          callback(data)
+        }
+      }
+    )
+  }
+
+  onError(callback: (...args: any[]) => void) {
+    return this.process.on('error', (data) => {
+      // All errors should be forwarded to the pool
+      return callback(data)
+    })
+  }
+
+  onExit(callback: (...args: any[]) => void) {
+    if (this.isTerminating) {
+      return callback()
+    }
+
+    return this.process.once('exit', callback)
   }
 
   ref() {
@@ -130,8 +145,6 @@ export default class ProcessWorker implements TinypoolWorker {
   }
 
   unref() {
-    this.port?.unref()
-
     // The forked child_process adds event listener on `process.on('message)`.
     // This requires manual unreffing of its channel.
     this.process.channel?.unref()

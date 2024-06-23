@@ -1,4 +1,4 @@
-import type { MessagePort, TransferListItem } from 'node:worker_threads'
+import { type MessagePort } from 'node:worker_threads'
 
 /** Channel for communicating between main thread and workers */
 export interface TinypoolChannel {
@@ -8,6 +8,9 @@ export interface TinypoolChannel {
   /** Called with worker's messages */
   postMessage(message: any): void
 }
+
+// TODO: Narrow down with generic
+type Listener = (...args: any[]) => void
 
 export interface TinypoolWorker {
   runtime: string
@@ -19,12 +22,31 @@ export interface TinypoolWorker {
     workerData: TinypoolData
     trackUnmanagedFds?: boolean
   }): void
+
+  /** Terminates the worker */
   terminate(): Promise<any>
-  postMessage(message: any, transferListItem?: TransferListItem[]): void
+
+  /** Initialize the worker */
+  initializeWorker(message: StartupMessage): void
+
+  /** Run given task on worker */
+  runTask(message: RequestMessage): void
+
+  /** Listen on task finish messages */
+  onTaskFinished(message: Listener): void
+
+  /** Listen on ready messages */
+  onReady(listener: Listener): void
+
+  /** Listen on errors */
+  onError(listener: Listener): void
+
+  /** Listen on exit. Called only **once**. */
+  onExit(listener: Listener): void
+
+  /** Set's channel for 'main <-> worker' communication */
   setChannel?: (channel: TinypoolChannel) => void
-  on(event: string, listener: (...args: any[]) => void): void
-  once(event: string, listener: (...args: any[]) => void): void
-  emit(event: string, ...data: any[]): void
+
   ref?: () => void
   unref?: () => void
   threadId: number
@@ -45,7 +67,7 @@ export interface TinypoolWorkerMessage<
 export interface StartupMessage {
   filename: string | null
   name: string
-  port: MessagePort
+  port?: MessagePort
   sharedBuffer: Int32Array
   useAtomics: boolean
 }
@@ -55,6 +77,7 @@ export interface RequestMessage {
   task: any
   filename: string
   name: string
+  transferList?: any
 }
 
 export interface ReadyMessage {
