@@ -1,8 +1,4 @@
-import {
-  MessageChannel,
-  type MessagePort,
-  receiveMessageOnPort,
-} from 'node:worker_threads'
+import { type MessagePort } from 'node:worker_threads'
 import { EventEmitterAsyncResource } from 'node:events'
 import { AsyncResource } from 'node:async_hooks'
 import { fileURLToPath, URL } from 'node:url'
@@ -447,7 +443,6 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   freeWorkerId: () => void
   taskInfos: Map<number, TaskInfo>
   idleTimeout: NodeJS.Timeout | null = null
-  port: MessagePort
   sharedBuffer: Int32Array
   lastSeenResponseCount: number = 0
   usedMemory?: number
@@ -456,7 +451,6 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
 
   constructor(
     worker: TinypoolWorker,
-    port: MessagePort,
     workerId: number,
     freeWorkerId: () => void,
     onMessage: ResponseCallback
@@ -465,8 +459,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     this.worker = worker
     this.workerId = workerId
     this.freeWorkerId = freeWorkerId
-    this.port = port
-    this.port.on('message', (message: ResponseMessage) =>
+    this.worker.onTaskFinished((message: ResponseMessage) =>
       this._handleResponse(message)
     )
     this.onMessage = onMessage
@@ -497,7 +490,6 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
         clearTimeout(timer)
       }
 
-      this.port.close()
       this.clearIdleTimeout()
       for (const taskInfo of this.taskInfos.values()) {
         taskInfo.done(Errors.ThreadTermination())
@@ -517,18 +509,6 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     }
   }
 
-  ref(): WorkerInfo {
-    this.port.ref()
-    return this
-  }
-
-  unref(): WorkerInfo {
-    // Note: Do not call ref()/unref() on the Worker itself since that may cause
-    // a hard crash, see https://github.com/nodejs/node/pull/33394.
-    this.port.unref()
-    return this
-  }
-
   _handleResponse(message: ResponseMessage): void {
     this.usedMemory = message.usedMemory
     this.onMessage(message)
@@ -536,7 +516,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     if (this.taskInfos.size === 0) {
       // No more tasks running on this Worker means it should not keep the
       // process running.
-      this.unref()
+      //this.unref()
     }
   }
 
@@ -547,13 +527,14 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
       taskId: taskInfo.taskId,
       filename: taskInfo.filename,
       name: taskInfo.name,
+      transferList: taskInfo.transferList,
     }
 
     try {
       if (taskInfo.channel) {
         this.worker.setChannel?.(taskInfo.channel)
       }
-      this.port.postMessage(message, taskInfo.transferList)
+      this.worker.runTask(message)
     } catch (err) {
       // This would mostly happen if e.g. message contains unserializable data
       // or transferList is invalid.
@@ -563,7 +544,6 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
 
     taskInfo.workerInfo = this
     this.taskInfos.set(taskInfo.taskId, taskInfo)
-    this.ref()
     this.clearIdleTimeout()
 
     // Inform the worker that there are new messages posted, and wake it up
@@ -585,10 +565,10 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     if (actualResponseCount !== this.lastSeenResponseCount) {
       this.lastSeenResponseCount = actualResponseCount
 
-      let entry
-      while ((entry = receiveMessageOnPort(this.port)) !== undefined) {
-        this._handleResponse(entry.message)
-      }
+      // TODO let entry
+      // while ((entry = receiveMessageOnPort(this.port)) !== undefined) {
+      //   this._handleResponse(entry.message)
+      // }
     }
   }
 
@@ -736,10 +716,8 @@ class ThreadPool {
       this._processPendingMessages()
     }
 
-    const { port1, port2 } = new MessageChannel()
     const workerInfo = new WorkerInfo(
       worker,
-      port1,
       workerId!,
       () => workerIds.set(workerId, true),
       onMessage
@@ -753,16 +731,15 @@ class ThreadPool {
     const message: StartupMessage = {
       filename: this.options.filename,
       name: this.options.name,
-      port: port2,
       sharedBuffer: workerInfo.sharedBuffer,
       useAtomics: this.options.useAtomics,
     }
 
-    worker.postMessage(message, [port2])
+    worker.initializeWorker(message)
 
     worker.onReady(() => {
       if (workerInfo.currentUsage() === 0) {
-        workerInfo.unref()
+        worker.unref?.()
       }
 
       if (!workerInfo.isReady()) {
@@ -801,12 +778,6 @@ class ThreadPool {
     })
 
     worker.unref?.()
-    port1.on('close', () => {
-      // The port is only closed if the Worker stops for some reason, but we
-      // always .unref() the Worker itself. We want to receive e.g. 'error'
-      // events on it, so we ref it once we know it's going to exit anyway.
-      worker.ref?.()
-    })
 
     this.workers.add(workerInfo)
   }

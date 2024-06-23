@@ -1,4 +1,4 @@
-import type { MessagePort, TransferListItem } from 'node:worker_threads'
+import { type MessagePort } from 'node:worker_threads'
 
 /** Channel for communicating between main thread and workers */
 export interface TinypoolChannel {
@@ -9,6 +9,7 @@ export interface TinypoolChannel {
   postMessage(message: any): void
 }
 
+// TODO: Narrow down with generic
 type Listener = (...args: any[]) => void
 
 export interface TinypoolWorker {
@@ -25,8 +26,14 @@ export interface TinypoolWorker {
   /** Terminates the worker */
   terminate(): Promise<any>
 
-  /** Send message to the worker */
-  postMessage(message: any, transferListItem?: TransferListItem[]): void
+  /** Initialize the worker */
+  initializeWorker(message: StartupMessage): void
+
+  /** Run given task on worker */
+  runTask(message: RequestMessage): void
+
+  /** Listen on task finish messages */
+  onTaskFinished(message: Listener): void
 
   /** Listen on ready messages */
   onReady(listener: Listener): void
@@ -60,7 +67,7 @@ export interface TinypoolWorkerMessage<
 export interface StartupMessage {
   filename: string | null
   name: string
-  port: MessagePort
+  port?: MessagePort
   sharedBuffer: Int32Array
   useAtomics: boolean
 }
@@ -70,6 +77,7 @@ export interface RequestMessage {
   task: any
   filename: string
   name: string
+  transferList?: any
 }
 
 export interface ReadyMessage {
