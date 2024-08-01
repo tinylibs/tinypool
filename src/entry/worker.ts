@@ -41,6 +41,10 @@ parentPort!.on('message', (message: StartupMessage) => {
 
   const { port, sharedBuffer, filename, name } = message
 
+  if (!port) {
+    throw new Error(`Missing port ${JSON.stringify(message)}`)
+  }
+
   ;(async function () {
     if (filename !== null) {
       await getHandler(filename, name)
