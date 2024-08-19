@@ -45,4 +45,8 @@ try {
   amount = os.cpus().length
 }
 
+if (amount === 0) {
+  amount = os.cpus().length
+}
+
 export { amount }
