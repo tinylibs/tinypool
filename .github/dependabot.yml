@@ -11,6 +11,6 @@ updates:
     groups:
       regular:
         update-types:
-          - 'minor'
           - 'patch'
+          - 'minor'
     versioning-strategy: increase
