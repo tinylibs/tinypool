@@ -32,6 +32,7 @@ import {
   type TinypoolData,
   type TinypoolWorker,
   type TinypoolChannel,
+  type TinypoolRunner,
 } from './common'
 import ThreadWorker from './runtime/thread-worker'
 import ProcessWorker from './runtime/process-worker'
@@ -1156,6 +1157,36 @@ class Tinypool extends EventEmitterAsyncResource {
       signal,
       runtime,
       channel,
+    })
+  }
+
+  withRunner<Module>(): this & { runner: TinypoolRunner<Module> } {
+    return this as any
+  }
+
+  get runner(): TinypoolRunner<{ [K in never]: never }> {
+    const run_worker_thread =
+      (_: any, name: string) =>
+      (...a: any[]) => {
+        return this.run(Object.assign(a, { __tinypool_args__: true }), {
+          name: name,
+        })
+      }
+    const run_child_process =
+      (_: any, name: string) =>
+      (...a: any[]) => {
+        if (a.length > 1)
+          throw new Error(
+            'TinypoolRunner doesn’t support args array in child_process runtime'
+          )
+        return this.run(a[0], { name: name })
+      }
+
+    return new Proxy({} as TinypoolRunner<{ [K in never]: never }>, {
+      get:
+        this.#pool.options.runtime === 'child_process'
+          ? run_child_process
+          : run_worker_thread,
     })
   }
 

@@ -102,7 +102,9 @@ function onMessage(
       if (handler === null) {
         throw new Error(`No handler function exported from ${filename}`)
       }
-      let result = await handler(task)
+      const args =
+        Array.isArray(task) && '__tinypool_args__' in task ? task : [task]
+      let result = await handler(...args)
       if (isMovable(result)) {
         transferList = transferList.concat(result[kTransferable])
         result = result[kValue]

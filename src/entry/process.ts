@@ -71,6 +71,9 @@ async function onMessage(message: IncomingMessage & { source: 'port' }) {
     if (handler === null) {
       throw new Error(`No handler function exported from ${filename}`)
     }
+
+    // doesn't work with child_process
+    // Array.isArray(task) && '__tinypool_args__' in task ? task : [task]
     const result = await handler(task)
     response = {
       source: 'port',
