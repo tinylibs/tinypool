@@ -1,12 +1,20 @@
 import { fileURLToPath } from 'node:url'
-import { type TransferListItem, Worker } from 'node:worker_threads'
-import { type TinypoolWorker } from '../common'
+import { inspect } from 'node:util'
+import { MessageChannel, type MessagePort, Worker } from 'node:worker_threads'
+import {
+  type RequestMessage,
+  type ReadyMessage,
+  type StartupMessage,
+  type TinypoolWorker,
+} from '../common'
 
 export default class ThreadWorker implements TinypoolWorker {
   name = 'ThreadWorker'
   runtime = 'worker_threads'
   thread!: Worker
   threadId!: number
+  port!: MessagePort
+  workerPort!: MessagePort
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
     this.thread = new Worker(
@@ -14,26 +22,63 @@ export default class ThreadWorker implements TinypoolWorker {
       options
     )
     this.threadId = this.thread.threadId
+
+    const { port1, port2 } = new MessageChannel()
+    this.port = port1
+    this.workerPort = port2
+
+    port1.on('close', () => {
+      // The port is only closed if the Worker stops for some reason, but we
+      // always .unref() the Worker itself. We want to receive e.g. 'error'
+      // events on it, so we ref it once we know it's going to exit anyway.
+      this.ref?.()
+    })
   }
 
   async terminate() {
+    this.port.close()
     return this.thread.terminate()
   }
 
-  postMessage(message: any, transferListItem?: Readonly<TransferListItem[]>) {
-    return this.thread.postMessage(message, transferListItem)
+  initializeWorker(message: StartupMessage) {
+    return this.thread.postMessage(
+      {
+        ...message,
+        port: this.workerPort,
+      },
+      [this.workerPort]
+    )
   }
 
-  on(event: string, callback: (...args: any[]) => void) {
-    return this.thread.on(event, callback)
+  runTask(message: RequestMessage): void {
+    this.port.ref()
+
+    return this.port.postMessage(message, message.transferList)
   }
 
-  once(event: string, callback: (...args: any[]) => void) {
-    return this.thread.once(event, callback)
+  onReady(callback: (...args: any[]) => void) {
+    return this.thread.on('message', (message: ReadyMessage) => {
+      if (message.ready === true) {
+        return callback()
+      }
+
+      this.thread.emit(
+        'error',
+        new Error(`Unexpected message on Worker: ${inspect(message)}`)
+      )
+    })
   }
 
-  emit(event: string, ...data: any[]) {
-    return this.thread.emit(event, ...data)
+  onTaskFinished(listener: (...args: any[]) => void): void {
+    this.port.on('message', listener)
+  }
+
+  onError(callback: (...args: any[]) => void) {
+    return this.thread.on('error', callback)
+  }
+
+  onExit(callback: (...args: any[]) => void) {
+    return this.thread.once('exit', callback)
   }
 
   ref() {
