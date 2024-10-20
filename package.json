@@ -41,6 +41,7 @@
     "build": "tsup",
     "publish": "clean-publish",
     "lint": "eslint --max-warnings=0",
+    "lint:fix": "eslint --max-warnings=0 --fix",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
