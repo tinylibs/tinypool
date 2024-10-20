@@ -6,6 +6,8 @@ jobs:
   publish:
     name: Publish commit
     runs-on: ubuntu-latest
+    if: github.repository == 'tinylibs/tinypool'
+
     steps:
       - uses: actions/checkout@v2
 
