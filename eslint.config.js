@@ -65,7 +65,7 @@ export default defineConfig([
   eslintPluginPrettierRecommended,
 ])
 
-/** @param config {import('eslint').Linter.FlatConfig} */
+/** @param config {import('eslint').Linter.Config} */
 function defineConfig(config) {
   return config
 }
