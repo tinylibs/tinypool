@@ -30,6 +30,18 @@ export interface TinypoolWorker {
   threadId: number
 }
 
+export type TinypoolRunner<T> = {
+  [K in keyof T as T[K] extends (...args: any[]) => any
+    ? K
+    : never]: T[K] extends (...args: infer A) => infer R
+    ? [R] extends [Promise<any>]
+      ? true extends R & 'any'
+        ? (...args: A) => Promise<any>
+        : T[K]
+      : (...args: A) => Promise<R>
+    : never
+}
+
 /**
  * Tinypool's internal messaging between main thread and workers.
  * - Utilizers can use `__tinypool_worker_message__` property to identify
