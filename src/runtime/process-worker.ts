@@ -26,12 +26,19 @@ export default class ProcessWorker implements TinypoolWorker {
       options.argv,
       {
         ...options,
+        stdio: 'pipe',
         env: {
           ...options.env,
           TINYPOOL_WORKER_ID: options.workerData[0].workerId.toString(),
         },
       }
     )
+
+    process.stdout.setMaxListeners(1 + process.stdout.getMaxListeners())
+    process.stderr.setMaxListeners(1 + process.stderr.getMaxListeners())
+    this.process.stdout?.pipe(process.stdout)
+    this.process.stderr?.pipe(process.stderr)
+
     this.threadId = this.process.pid!
 
     this.process.on('exit', this.onUnexpectedExit)
@@ -54,6 +61,8 @@ export default class ProcessWorker implements TinypoolWorker {
     this.process.kill()
     await this.waitForExit
 
+    this.process.stdout?.unpipe(process.stdout)
+    this.process.stderr?.unpipe(process.stderr)
     this.port?.close()
     clearTimeout(sigkillTimeout)
   }
@@ -136,6 +145,21 @@ export default class ProcessWorker implements TinypoolWorker {
     // This requires manual unreffing of its channel.
     this.process.channel?.unref()
 
+    if (hasUnref(this.process.stdout)) {
+      this.process.stdout.unref()
+    }
+
+    if (hasUnref(this.process.stderr)) {
+      this.process.stderr.unref()
+    }
+
     return this.process.unref()
   }
+}
+
+// unref is untyped for some reason
+function hasUnref(stream: null | object): stream is { unref: () => void } {
+  return (
+    stream != null && 'unref' in stream && typeof stream.unref === 'function'
+  )
 }
