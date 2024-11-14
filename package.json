@@ -1,7 +1,7 @@
 {
   "name": "tinypool",
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "packageManager": "pnpm@9.0.6",
   "description": "A minimal and tiny Node.js Worker Thread Pool implementation, a fork of piscina, but with fewer features",
   "license": "MIT",
