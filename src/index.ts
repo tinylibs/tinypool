@@ -50,7 +50,7 @@ declare global {
   }
 }
 
-const cpuCount: number = physicalCpuCount
+export const cpuCount: number = physicalCpuCount
 
 interface AbortSignalEventTargetAddOptions {
   once: boolean
