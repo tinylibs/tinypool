@@ -10,7 +10,7 @@ Tinypool is a fork of piscina. What we try to achieve in this library, is to eli
 - ✅ Physical cores instead of Logical cores with [physical-cpu-count](https://www.npmjs.com/package/physical-cpu-count)
 - ✅ Supports `worker_threads` and `child_process`
 - ❌ No utilization
-- ❌ OS-specific thread priority setting
+- ❌ No OS-specific thread priority setting
 
 - Written in TypeScript, and ESM support only. For Node.js 18.x and higher.
 
