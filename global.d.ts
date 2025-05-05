@@ -1,4 +1,4 @@
-// only for tsup build, excluded from the final tgz
+// only for tsdown build, excluded from the final tgz
 declare namespace NodeJS {
   interface Process {
     __tinypool_state__: {
