@@ -37,8 +37,8 @@
   "scripts": {
     "test": "vitest",
     "bench": "vitest bench",
-    "dev": "tsup --watch",
-    "build": "tsup",
+    "dev": "tsdown --watch",
+    "build": "tsdown",
     "publish": "clean-publish",
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit"
@@ -51,7 +51,7 @@
     "eslint-plugin-prettier": "^5.1.3",
     "eslint-plugin-unicorn": "^53.0.0",
     "prettier": "^3.3.2",
-    "tsup": "^8.0.2",
+    "tsdown": "^0.11.3",
     "typescript": "^5.4.5",
     "typescript-eslint": "^7.13.0",
     "vite": "^5.2.11",
