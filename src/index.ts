@@ -152,6 +152,7 @@ interface Options {
   taskQueue?: TaskQueue
   trackUnmanagedFds?: boolean
   isolateWorkers?: boolean
+  teardown?: string
 }
 
 interface FilledOptions extends Options {
@@ -454,18 +455,24 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
   usedMemory?: number
   onMessage: ResponseCallback
   shouldRecycle?: boolean
+  filename?: string | null
+  teardown?: string
 
   constructor(
     worker: TinypoolWorker,
     port: MessagePort,
     workerId: number,
     freeWorkerId: () => void,
-    onMessage: ResponseCallback
+    onMessage: ResponseCallback,
+    filename?: string | null,
+    teardown?: string
   ) {
     super()
     this.worker = worker
     this.workerId = workerId
     this.freeWorkerId = freeWorkerId
+    this.teardown = teardown
+    this.filename = filename
     this.port = port
     this.port.on('message', (message: ResponseMessage) =>
       this._handleResponse(message)
@@ -485,6 +492,25 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
       resolve = res
       reject = rej
     })
+
+    if (this.teardown && this.filename) {
+      const { teardown, filename } = this
+
+      await new Promise((resolve, reject) => {
+        this.postTask(
+          new TaskInfo(
+            {},
+            [],
+            filename,
+            teardown,
+            (error, result) => (error ? reject(error) : resolve(result)),
+            null,
+            1,
+            undefined
+          )
+        )
+      })
+    }
 
     const timer = timeout
       ? setTimeout(
@@ -743,7 +769,9 @@ class ThreadPool {
       port1,
       workerId!,
       () => workerIds.set(workerId, true),
-      onMessage
+      onMessage,
+      this.options.filename,
+      this.options.teardown
     )
     if (this.startingUp) {
       // There is no point in waiting for the initial set of Workers to indicate

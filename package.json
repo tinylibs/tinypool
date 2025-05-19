@@ -37,7 +37,7 @@
   "scripts": {
     "test": "vitest",
     "bench": "vitest bench",
-    "dev": "tsdown --watch",
+    "dev": "tsdown --watch ./src",
     "build": "tsdown",
     "publish": "clean-publish",
     "lint": "eslint --max-warnings=0",
