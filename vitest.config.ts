@@ -14,9 +14,6 @@ export default defineConfig({
     globals: true,
     isolate: false,
 
-    // simple.test.ts expects to be run in main thread
-    poolMatchGlobs: [['**/simple.test.ts', 'forks']],
-
     benchmark: {
       include: ['**/**.bench.ts'],
     },
