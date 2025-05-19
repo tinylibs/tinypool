@@ -59,6 +59,6 @@ vi.mock(import('node:child_process'), async (importOriginal) => {
   const original = await importOriginal()
   return {
     ...original,
-    default: { ...original.default, execSync: () => cpuCount },
+    default: { ...original.default, execSync: () => cpuCount as any },
   }
 })
