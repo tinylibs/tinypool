@@ -44,6 +44,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.13",
     "@types/node": "^20.12.8",
     "clean-publish": "^3.4.4",
     "eslint": "^9.4.0",
