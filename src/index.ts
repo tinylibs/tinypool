@@ -34,7 +34,7 @@ import {
   type TinypoolChannel,
 } from './common'
 import ThreadWorker from './runtime/thread-worker'
-import ProcessWorker from './runtime/process-worker'
+import ProcessWorker from './runtime/process'
 
 declare global {
   namespace NodeJS {
@@ -580,6 +580,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
       if (taskInfo.channel) {
         this.worker.setChannel?.(taskInfo.channel)
       }
+      this.port.start();
       this.port.postMessage(message, taskInfo.transferList)
     } catch (err) {
       // This would mostly happen if e.g. message contains unserializable data
