@@ -1163,8 +1163,14 @@ class Tinypool extends EventEmitterAsyncResource {
     }
 
     if(isBun) {
-      if(options.useAtomics)
-        throw new Error(`options.useAtomics can not be set in Bun runtime`);
+      if(options.useAtomics) {
+        throw new Error('options.useAtomics can not be set in Bun runtime')
+      }
+
+      // ::bunternal:: [NotImplementedError]: worker_threads.Worker option "resourceLimits" is not yet implemented in Bun.
+      if(options.resourceLimits) {
+        throw new Error('options.resourceLimits can not be set in Bun runtime.')
+      }
 
       options.useAtomics = false;
     }
