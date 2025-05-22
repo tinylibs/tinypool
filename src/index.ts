@@ -35,6 +35,7 @@ import {
 } from './common'
 import ThreadWorker from './runtime/thread-worker'
 import ProcessWorker from './runtime/process'
+import { isBun } from './utils'
 
 declare global {
   namespace NodeJS {
@@ -1159,6 +1160,13 @@ class Tinypool extends EventEmitterAsyncResource {
         1,
         Math.floor(options.maxThreads * cpuCount)
       )
+    }
+
+    if(isBun) {
+      if(options.useAtomics)
+        throw new Error(`options.useAtomics can not be set in Bun runtime`);
+
+      options.useAtomics = false;
     }
 
     super({ ...options, name: 'Tinypool' })
