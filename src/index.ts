@@ -554,7 +554,6 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
       if (taskInfo.channel) {
         this.worker.setChannel?.(taskInfo.channel)
       }
-      this.port.start();
       this.port.postMessage(message, taskInfo.transferList)
     } catch (err) {
       // This would mostly happen if e.g. message contains unserializable data
@@ -764,6 +763,8 @@ class ThreadPool {
 
     worker.on('message', (message: ReadyMessage) => {
       if (message.ready === true) {
+        port1.start()
+        
         if (workerInfo.currentUsage() === 0) {
           workerInfo.unref()
         }
