@@ -49,7 +49,7 @@ parentPort!.on('message', (message: StartupMessage) => {
     const readyMessage: ReadyMessage = { ready: true }
     parentPort!.postMessage(readyMessage)
 
-    port.on('message', onMessage.bind(null, port, sharedBuffer))
+    port.onmessage = (event) => onMessage(port, sharedBuffer, event.data)
     atomicsWaitLoop(port, sharedBuffer)
   })().catch(throwInNextTick)
 })
