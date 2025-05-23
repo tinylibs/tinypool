@@ -1,10 +1,15 @@
 import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
 import { fileURLToPath } from 'node:url'
+const isBun = 'bun' in process.versions;
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-test('resourceLimits causes task to reject', async () => {
+test('resourceLimits causes task to reject', async ({skip}) => {
+  if(isBun) {
+    return skip();
+  }
+
   const worker = new Tinypool({
     filename: resolve(__dirname, 'fixtures/resource-limits.js'),
     resourceLimits: {
