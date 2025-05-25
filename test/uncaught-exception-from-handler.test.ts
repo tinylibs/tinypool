@@ -1,4 +1,4 @@
-import { dirname, resolve } from 'node:path'
+import { dirname, resolve, sep } from 'node:path'
 import { Tinypool } from 'tinypool'
 import { fileURLToPath } from 'node:url'
 import { once } from 'node:events'
@@ -66,4 +66,24 @@ test('using parentPort is treated as an error', async () => {
     })()
       `)
   ).rejects.toThrow(/Unexpected message on Worker: 'some message'/)
+})
+
+test('no named handler found from worker', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/eval.js'),
+  })
+
+  let errorMessage = 'Worker did not throw error'
+
+  try {
+    await pool.run('', { name: 'someHandler' })
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error)
+  }
+
+  expect(
+    errorMessage.replace(process.cwd(), '<process-cwd>').replaceAll(sep, '/')
+  ).toMatchInlineSnapshot(
+    `"No handler function "someHandler" exported from "<process-cwd>/test/fixtures/eval.js""`
+  )
 })
