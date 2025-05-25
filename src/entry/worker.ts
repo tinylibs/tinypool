@@ -100,7 +100,9 @@ function onMessage(
     try {
       const handler = await getHandler(filename, name)
       if (handler === null) {
-        throw new Error(`No handler function exported from ${filename}`)
+        throw new Error(
+          `No handler function "${name}" exported from "${filename}"`
+        )
       }
       let result = await handler(task)
       if (isMovable(result)) {

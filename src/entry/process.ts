@@ -69,7 +69,9 @@ async function onMessage(message: IncomingMessage & { source: 'port' }) {
   try {
     const handler = await getHandler(filename, name)
     if (handler === null) {
-      throw new Error(`No handler function exported from ${filename}`)
+      throw new Error(
+        `No handler function "${name}" exported from "${filename}"`
+      )
     }
     const result = await handler(task)
     response = {
