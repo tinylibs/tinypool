@@ -737,6 +737,8 @@ class ThreadPool {
       trackUnmanagedFds: this.options.trackUnmanagedFds,
     })
 
+    this.publicInterface.emit('spawn', worker)
+
     const onMessage = (message: ResponseMessage) => {
       const { taskId, result } = message
       // In case of success: Call the callback that was passed to `runTask`,
