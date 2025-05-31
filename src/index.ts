@@ -34,7 +34,8 @@ import {
   type TinypoolChannel,
 } from './common'
 import ThreadWorker from './runtime/thread-worker'
-import ProcessWorker from './runtime/process-worker'
+import ProcessWorker from './runtime/process'
+import { isBun } from './utils'
 
 declare global {
   namespace NodeJS {
@@ -791,6 +792,8 @@ class ThreadPool {
 
     worker.on('message', (message: ReadyMessage) => {
       if (message.ready === true) {
+        port1.start()
+        
         if (workerInfo.currentUsage() === 0) {
           workerInfo.unref()
         }
@@ -1157,6 +1160,19 @@ class Tinypool extends EventEmitterAsyncResource {
         1,
         Math.floor(options.maxThreads * cpuCount)
       )
+    }
+
+    if(isBun) {
+      if(options.useAtomics) {
+        throw new Error('options.useAtomics can not be set in Bun runtime')
+      }
+
+      // ::bunternal:: [NotImplementedError]: worker_threads.Worker option "resourceLimits" is not yet implemented in Bun.
+      if(options.resourceLimits) {
+        throw new Error('options.resourceLimits can not be set in Bun runtime.')
+      }
+
+      options.useAtomics = false;
     }
 
     super({ ...options, name: 'Tinypool' })
