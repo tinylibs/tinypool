@@ -3,10 +3,13 @@ import type { MessagePort, TransferListItem } from 'node:worker_threads'
 /** Channel for communicating between main thread and workers */
 export interface TinypoolChannel {
   /** Workers subscribing to messages */
-  onMessage(callback: (message: any) => void): void
+  onMessage?: (callback: (message: any) => void) => void
 
   /** Called with worker's messages */
-  postMessage(message: any): void
+  postMessage?: (message: any) => void
+
+  /** Called when channel can be closed */
+  onClose?: () => void
 }
 
 export interface TinypoolWorker {

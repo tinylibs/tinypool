@@ -46,6 +46,52 @@ describe('worker_threads', () => {
     `)
     expect(result).toBe(threadId)
   })
+
+  test('channel is closed when isolated', async () => {
+    const pool = createPool({
+      runtime: 'worker_threads',
+      isolateWorkers: true,
+      minThreads: 2,
+      maxThreads: 2,
+    })
+
+    const events: string[] = []
+
+    await pool.run('', { channel: { onClose: () => events.push('call #1') } })
+    expect(events).toStrictEqual(['call #1'])
+
+    await pool.run('', { channel: { onClose: () => events.push('call #2') } })
+    expect(events).toStrictEqual(['call #1', 'call #2'])
+
+    await pool.run('', { channel: { onClose: () => events.push('call #3') } })
+    expect(events).toStrictEqual(['call #1', 'call #2', 'call #3'])
+
+    await pool.destroy()
+    expect(events).toStrictEqual(['call #1', 'call #2', 'call #3'])
+  })
+
+  test('channel is closed when non-isolated', async () => {
+    const pool = createPool({
+      runtime: 'worker_threads',
+      isolateWorkers: false,
+      minThreads: 2,
+      maxThreads: 2,
+    })
+
+    const events: string[] = []
+
+    await pool.run('', { channel: { onClose: () => events.push('call #1') } })
+    expect(events).toStrictEqual([])
+
+    await pool.run('', { channel: { onClose: () => events.push('call #2') } })
+    expect(events).toStrictEqual(['call #1'])
+
+    await pool.run('', { channel: { onClose: () => events.push('call #3') } })
+    expect(events).toStrictEqual(['call #1', 'call #2'])
+
+    await pool.destroy()
+    expect(events).toStrictEqual(['call #1', 'call #2', 'call #3'])
+  })
 })
 
 describe('child_process', () => {
@@ -151,6 +197,52 @@ describe('child_process', () => {
       received: 'Hello from main',
       response: 'Hello from worker',
     })
+  })
+
+  test('channel is closed when isolated', async () => {
+    const pool = createPool({
+      runtime: 'child_process',
+      isolateWorkers: true,
+      minThreads: 2,
+      maxThreads: 2,
+    })
+
+    const events: string[] = []
+
+    await pool.run('', { channel: { onClose: () => events.push('call #1') } })
+    expect(events).toStrictEqual(['call #1'])
+
+    await pool.run('', { channel: { onClose: () => events.push('call #2') } })
+    expect(events).toStrictEqual(['call #1', 'call #2'])
+
+    await pool.run('', { channel: { onClose: () => events.push('call #3') } })
+    expect(events).toStrictEqual(['call #1', 'call #2', 'call #3'])
+
+    await pool.destroy()
+    expect(events).toStrictEqual(['call #1', 'call #2', 'call #3'])
+  })
+
+  test('channel is closed when non-isolated', async () => {
+    const pool = createPool({
+      runtime: 'child_process',
+      isolateWorkers: false,
+      minThreads: 2,
+      maxThreads: 2,
+    })
+
+    const events: string[] = []
+
+    await pool.run('', { channel: { onClose: () => events.push('call #1') } })
+    expect(events).toStrictEqual([])
+
+    await pool.run('', { channel: { onClose: () => events.push('call #2') } })
+    expect(events).toStrictEqual(['call #1'])
+
+    await pool.run('', { channel: { onClose: () => events.push('call #3') } })
+    expect(events).toStrictEqual(['call #1', 'call #2'])
+
+    await pool.destroy()
+    expect(events).toStrictEqual(['call #1', 'call #2', 'call #3'])
   })
 })
 

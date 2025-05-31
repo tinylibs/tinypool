@@ -64,14 +64,20 @@ export default class ProcessWorker implements TinypoolWorker {
     this.process.stdout?.unpipe(process.stdout)
     this.process.stderr?.unpipe(process.stderr)
     this.port?.close()
+    this.channel?.onClose?.()
     clearTimeout(sigkillTimeout)
   }
 
   setChannel(channel: TinypoolChannel) {
+    // Previous channel exists in non-isolated runs
+    if (this.channel && this.channel !== channel) {
+      this.channel.onClose?.()
+    }
+
     this.channel = channel
 
     // Mirror channel's messages to process
-    this.channel.onMessage((message: any) => {
+    this.channel.onMessage?.((message: any) => {
       this.send(message)
     })
   }
@@ -115,7 +121,7 @@ export default class ProcessWorker implements TinypoolWorker {
       }
 
       if (!data || !data.__tinypool_worker_message__) {
-        return this.channel?.postMessage(data)
+        return this.channel?.postMessage?.(data)
       }
 
       if (data.source === 'pool') {
