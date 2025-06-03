@@ -8,4 +8,4 @@ export function stderr(): NodeJS.WriteStream | undefined {
   return console._stderr || process.stderr || undefined
 }
 
-export const isBun = 'bun' in process.versions;
+export const isBun = 'bun' in process.versions

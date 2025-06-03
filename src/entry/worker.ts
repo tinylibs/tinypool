@@ -51,7 +51,7 @@ parentPort!.on('message', (message: StartupMessage) => {
 
     // On Bun we need to start the port explicitly, does not impact the Nodejs
     // https://github.com/oven-sh/bun/issues/19863
-    port.start();
+    port.start()
 
     port.on('message', onMessage.bind(null, port, sharedBuffer))
     atomicsWaitLoop(port, sharedBuffer)

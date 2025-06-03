@@ -13,7 +13,7 @@ const SIGKILL_TIMEOUT = 1000
 export default class ProcessWorker implements TinypoolWorker {
   name = 'ProcessWorker'
   runtime = 'bun_spawn'
-  process!: import('bun').Subprocess
+  process!: import('bun').Subprocess<'inherit', 'pipe', 'pipe'>
   threadId!: number
   port?: MessagePort
   channel?: TinypoolChannel
@@ -51,8 +51,8 @@ export default class ProcessWorker implements TinypoolWorker {
           }
         }
 
-        for(const handler of this.onExit) {
-          handler(exitCode);
+        for (const handler of this.onExit) {
+          handler(exitCode)
         }
         this.onError = []
         this.onExit = []
@@ -68,23 +68,23 @@ export default class ProcessWorker implements TinypoolWorker {
     })
 
     // Pipe stdout/stderr to main process for logs
-    this.process.stdout?.pipeTo(
+    void this.process.stdout?.pipeTo(
       new WritableStream({
         write(chunk) {
-          process.stdout.write(chunk)
+          process.stdout.write(Buffer.from(chunk).toString('utf8'))
         },
       })
     )
-    this.process.stderr?.pipeTo(
+    void this.process.stderr?.pipeTo(
       new WritableStream({
         write(chunk) {
-          process.stderr.write(chunk)
+          process.stderr.write(Buffer.from(chunk).toString('utf8'))
         },
       })
     )
 
     // Handle unexpected exit
-    this.process.exited.then(() => {
+    void this.process.exited.then(() => {
       if (!this.isTerminating) {
         this.emit('error', new Error('Worker exited unexpectedly'))
       }
@@ -131,7 +131,7 @@ export default class ProcessWorker implements TinypoolWorker {
     }
 
     if (this.port) {
-      this.port.onmessage =  (portMessage) => {
+      this.port.onmessage = (portMessage) => {
         this.send(<TinypoolWorkerMessage<'port'>>{
           ...portMessage.data,
           source: 'port',
@@ -147,11 +147,15 @@ export default class ProcessWorker implements TinypoolWorker {
     })
   }
 
-  private registerHandler(event: string, callback: (...args: any[]) => void, clean: boolean) {
+  private registerHandler(
+    event: string,
+    callback: (...args: any[]) => void,
+    clean: boolean
+  ) {
     if (event === 'error') {
       const handler = (error: Error): void => {
         callback(error)
-        if(clean) this.onError.splice(this.onError.indexOf(handler), 1)
+        if (clean) this.onError.splice(this.onError.indexOf(handler), 1)
       }
       this.onError.push(handler)
       return
@@ -161,7 +165,7 @@ export default class ProcessWorker implements TinypoolWorker {
       const handler = (data: TinypoolWorkerMessage) => {
         if (!data || !data.__tinypool_worker_message__) {
           this.channel?.postMessage(data)
-          if(clean) this.onMessage.splice(this.onMessage.indexOf(handler), 1)
+          if (clean) this.onMessage.splice(this.onMessage.indexOf(handler), 1)
           return
         }
 
@@ -170,40 +174,40 @@ export default class ProcessWorker implements TinypoolWorker {
         } else if (data.source === 'port') {
           this.port?.postMessage(data)
         }
-        if(clean) this.onMessage.splice(this.onMessage.indexOf(handler), 1)
+        if (clean) this.onMessage.splice(this.onMessage.indexOf(handler), 1)
       }
       this.onMessage.push(handler)
-      return;
+      return
     }
 
-    if(event === 'exit') {
+    if (event === 'exit') {
       const handler = (code: number | null) => {
-        callback(code);
-        if(clean) this.onExit.splice(this.onExit.indexOf(handler), 1);
+        callback(code)
+        if (clean) this.onExit.splice(this.onExit.indexOf(handler), 1)
       }
       this.onExit.push(handler)
-      return;
+      return
     }
   }
 
   on(event: string, callback: (...args: any[]) => void) {
-    this.registerHandler(event, callback, false);
+    this.registerHandler(event, callback, false)
   }
 
   once(event: string, callback: (...args: any[]) => void) {
-    this.registerHandler(event, callback, true);
+    this.registerHandler(event, callback, true)
   }
 
   emit(event: string, ...data: any[]) {
     if (event === 'error') {
-      for(const handler of this.onError) {
-        handler(data[0]);
+      for (const handler of this.onError) {
+        handler(data[0])
       }
     }
 
-    if(event === 'message') {
-      for(const handler of this.onMessage) {
-        handler(data[0]);   
+    if (event === 'message') {
+      for (const handler of this.onMessage) {
+        handler(data[0])
       }
     }
   }
