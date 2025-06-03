@@ -2,6 +2,7 @@ import { createHook } from 'node:async_hooks'
 import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
 import { fileURLToPath } from 'node:url'
+import { isBun } from './utils'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -29,7 +30,13 @@ test('destroy after initializing should work (#43)', async () => {
   await promise
 })
 
-test('cleans up async resources', async () => {
+test('cleans up async resources', async ({ skip }) => {
+  // Async context tracking via createHook is highly experimental and even suggested by NodeJS migrate away from this.
+  // https://nodejs.org/docs/latest/api/async_hooks.html#async-hooks
+  // Experimental. Please migrate away from this API, if you can. We do not recommend using the createHook, AsyncHook,
+  // and executionAsyncResource APIs as they have usability issues, safety risks, and performance implications.
+  if (isBun) return skip('AsyncHooks are not yet supported in Bun')
+
   let onCleanup = () => {}
   const waitForCleanup = new Promise<void>((r) => (onCleanup = r))
   const timeout = setTimeout(() => {
