@@ -2,6 +2,7 @@ import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
 import { fileURLToPath } from 'node:url'
 import { MessageChannel } from 'node:worker_threads'
+import { isBun } from './utils'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -16,6 +17,7 @@ test('isolated workers call teardown on worker recycle', async () => {
 
   for (const _ of [1, 2, 3, 4, 5]) {
     const { port1, port2 } = new MessageChannel()
+    port2.start()
     const promise = new Promise((resolve) => port2.on('message', resolve))
 
     const output = await pool.run({ port: port1 }, { transferList: [port1] })
@@ -25,7 +27,13 @@ test('isolated workers call teardown on worker recycle', async () => {
   }
 })
 
-test('non-isolated workers call teardown on worker recycle', async () => {
+test('non-isolated workers call teardown on worker recycle', async ({
+  skip,
+}) => {
+  // TODO: Need to debug why `port2.off` does not behave as expected on Bun
+  // It doe not clear the handler as well as not call `unexpectedTeardown` five times
+  if (isBun) return skip('Teardown behave unexpected on bun')
+
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/teardown.mjs'),
     minThreads: 1,
@@ -41,6 +49,7 @@ test('non-isolated workers call teardown on worker recycle', async () => {
   }
 
   const { port1, port2 } = new MessageChannel()
+  port2.start()
 
   for (const index of [1, 2, 3, 4, 5]) {
     port2.on('message', unexpectedTeardown)
