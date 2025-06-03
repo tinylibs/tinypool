@@ -34,7 +34,7 @@ import {
   type TinypoolChannel,
 } from './common'
 import ThreadWorker from './runtime/thread-worker'
-import ProcessWorker from './runtime/process'
+import ProcessWorker from './runtime/process-worker'
 import { isBun } from './utils'
 
 declare global {

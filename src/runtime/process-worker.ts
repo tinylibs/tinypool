@@ -92,6 +92,7 @@ export default class ProcessWorker implements TinypoolWorker {
     transferListItem?.forEach((item) => {
       if (item instanceof MessagePort) {
         this.port = item
+        this.port.start()
       }
     })
 
@@ -149,7 +150,9 @@ export default class ProcessWorker implements TinypoolWorker {
 
     // The forked child_process adds event listener on `process.on('message)`.
     // This requires manual unreffing of its channel.
-    this.process.channel?.unref()
+    if (this.process.channel && hasUnref(this.process.channel)) {
+      this.process.channel?.unref()
+    }
 
     if (hasUnref(this.process.stdout)) {
       this.process.stdout.unref()
