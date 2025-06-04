@@ -2,12 +2,15 @@ import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
 import { Tinypool } from 'tinypool'
+import { isBun } from './utils'
 
 const runtimes = ['worker_threads', 'child_process'] as const
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 test.each(runtimes)(
   "worker's stdout and stderr are piped to main thread when { runtime: '%s' }",
+  // TODO: std options are not yet supported in Bun
+  { skip: isBun },
   async (runtime) => {
     const pool = createPool({
       runtime,
