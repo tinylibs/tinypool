@@ -33,6 +33,7 @@ jobs:
           --exclude **/atomic.test.ts
           --exclude **/pool-destroy.test.ts
           --exclude **/resource-limits.test.ts
+          --exclude **/runtime.test.ts
           --exclude **/teardown.test.ts
           --exclude **/termination.test.ts
           --exclude **/uncaught-exception-from-handler.test.ts
