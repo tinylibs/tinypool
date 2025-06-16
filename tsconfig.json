@@ -16,7 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["vitest/globals"],
     "paths": {
-      "tinypool": ["./dist/"]
+      "tinypool": ["./dist/index.d.ts"]
     }
   },
   "include": ["./*.d.ts", "src/**/*", "test/**/*"],
