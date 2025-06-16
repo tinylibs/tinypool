@@ -791,6 +791,8 @@ class ThreadPool {
 
     worker.on('message', (message: ReadyMessage) => {
       if (message.ready === true) {
+        port1.start()
+
         if (workerInfo.currentUsage() === 0) {
           workerInfo.unref()
         }
