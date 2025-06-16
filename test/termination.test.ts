@@ -1,7 +1,6 @@
 import { dirname, resolve } from 'node:path'
 import { Tinypool } from 'tinypool'
 import { fileURLToPath } from 'node:url'
-import { isBun } from './utils'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const cleanups: (() => Promise<unknown>)[] = []
@@ -58,12 +57,7 @@ test('writing to terminating worker does not crash', async () => {
   await destroyed
 })
 
-test('recycling workers while closing pool does not crash', async ({
-  skip,
-}) => {
-  // TODO: Need to debug the weird issue for this test
-  if (isBun) return skip()
-
+test('recycling workers while closing pool does not crash', async () => {
   const pool = new Tinypool({
     runtime: 'child_process',
     filename: resolve(__dirname, 'fixtures/nested-pool.mjs'),

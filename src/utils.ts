@@ -7,5 +7,3 @@ export function stderr(): NodeJS.WriteStream | undefined {
   // @ts-expect-error Node.js maps process.stderr to console._stderr
   return console._stderr || process.stderr || undefined
 }
-
-export const isBun = 'bun' in process.versions

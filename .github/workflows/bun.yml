@@ -10,20 +10,12 @@ on:
 jobs:
   test:
     name: Test (Bun)
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        bun-version: [latest]
 
-    runs-on: ${{matrix.os}}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Bun ${{ matrix.bun-version }}
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: ${{ matrix.bun-version }}
+      - uses: oven-sh/setup-bun@v2
 
       - uses: pnpm/action-setup@v2
 
@@ -33,5 +25,15 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Exclude tests that Bun is not compatible with
       - name: Test
-        run: bun run --bun test run
+        run: >-
+          bun run --bun test run --fileParallelism=false
+          --exclude **/async-context.test.ts
+          --exclude **/atomic.test.ts
+          --exclude **/pool-destroy.test.ts
+          --exclude **/resource-limits.test.ts
+          --exclude **/teardown.test.ts
+          --exclude **/termination.test.ts
+          --exclude **/uncaught-exception-from-handler.test.ts
+          --exclude **/worker-stdio.test.ts

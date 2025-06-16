@@ -16,7 +16,6 @@ test('isolated workers call teardown on worker recycle', async () => {
 
   for (const _ of [1, 2, 3, 4, 5]) {
     const { port1, port2 } = new MessageChannel()
-    port2.start()
     const promise = new Promise((resolve) => port2.on('message', resolve))
 
     const output = await pool.run({ port: port1 }, { transferList: [port1] })
@@ -42,10 +41,10 @@ test('non-isolated workers call teardown on worker recycle', async () => {
   }
 
   const { port1, port2 } = new MessageChannel()
-  port2.start()
-  port2.on('message', unexpectedTeardown)
 
   for (const index of [1, 2, 3, 4, 5]) {
+    port2.on('message', unexpectedTeardown)
+
     const transferList = index === 1 ? [port1] : []
 
     const output = await pool.run({ port: transferList[0] }, { transferList })
@@ -56,5 +55,5 @@ test('non-isolated workers call teardown on worker recycle', async () => {
   const promise = new Promise((resolve) => port2.on('message', resolve))
 
   await pool.destroy()
-  await expect(promise).resolves.toEqual(`Teardown of task #5`)
+  await expect(promise).resolves.toMatchInlineSnapshot(`"Teardown of task #5"`)
 })

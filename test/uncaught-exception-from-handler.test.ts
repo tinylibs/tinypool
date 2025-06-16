@@ -49,7 +49,7 @@ test('uncaught exception in immediate after task yields error event', async () =
   pool.threads[0]!.ref?.()
 
   // This is the main aassertion here.
-  expect((await errorEvent)[0]!.message).toContain('not_caught')
+  expect((await errorEvent)[0]!.message).toEqual('not_caught')
 })
 
 test('using parentPort is treated as an error', async () => {
@@ -62,7 +62,7 @@ test('using parentPort is treated as an error', async () => {
       console.log();
       const parentPort = (await import('worker_threads')).parentPort;
       parentPort.postMessage("some message");
-      await new Promise(() => {}) /* act as if we were doing some work */
+      new Promise(() => {}) /* act as if we were doing some work */
     })()
       `)
   ).rejects.toThrow(/Unexpected message on Worker: 'some message'/)

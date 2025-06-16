@@ -1,13 +1,10 @@
 import Tinypool from 'tinypool'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { isBun } from './utils'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-test('coverage test for Atomics optimization', async ({ skip }) => {
-  if (isBun) return skip('Atomics are not supported in Bun')
-
+test('coverage test for Atomics optimization', async () => {
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/notify-then-sleep-or.js'),
     minThreads: 2,
@@ -70,9 +67,7 @@ function popcount8(v: number): number {
   return v
 }
 
-test('avoids unbounded recursion', async ({ skip }) => {
-  if (isBun) return skip('Atomics are not yet supported in Bun')
-
+test('avoids unbounded recursion', async () => {
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/simple-isworkerthread.js'),
     minThreads: 2,
