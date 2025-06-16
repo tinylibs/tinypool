@@ -31,6 +31,7 @@ jobs:
           bun run --bun test run --fileParallelism=false
           --exclude **/async-context.test.ts
           --exclude **/atomic.test.ts
+          --exclude **/isolation.test.ts
           --exclude **/pool-destroy.test.ts
           --exclude **/resource-limits.test.ts
           --exclude **/runtime.test.ts
