@@ -151,9 +151,7 @@ export default class ProcessWorker implements TinypoolWorker {
     // The forked child_process adds event listener on `process.on('message)`.
     // This requires manual unreffing of its channel.
     // Bun runtime does not have `unref` for the channel
-    if (this.process.channel && hasUnref(this.process.channel)) {
-      this.process.channel?.unref()
-    }
+    this.process.channel?.unref?.()
 
     if (hasUnref(this.process.stdout)) {
       this.process.stdout.unref()
