@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-type:
+        type: choice
+        description: Type of the release
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      # OICD requires updated npm even when pnpm is used
+      - name: Update npm
+        run: |
+          npm --version
+          npm install -g npm@latest
+          npm --version
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Configure github-actions git
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@users.noreply.github.com'
+
+      - name: Bump version
+        run: pnpm version ${{ github.event.inputs.release-type }}
+
+      - name: Push release tag
+        run: git push origin main --follow-tags
+
+      - name: Publish to npm
+        run: pnpm publish
