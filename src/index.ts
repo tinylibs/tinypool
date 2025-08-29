@@ -11,7 +11,7 @@ import { inspect, types } from 'node:util'
 import assert from 'node:assert'
 import { performance } from 'node:perf_hooks'
 import { readFileSync } from 'node:fs'
-import { amount as physicalCpuCount } from './physicalCpuCount'
+import { availableParallelism } from 'node:os'
 import {
   type ReadyMessage,
   type RequestMessage,
@@ -50,7 +50,7 @@ declare global {
   }
 }
 
-const cpuCount: number = physicalCpuCount
+const cpuCount: number = availableParallelism()
 
 interface AbortSignalEventTargetAddOptions {
   once: boolean
