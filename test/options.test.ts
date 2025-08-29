@@ -51,7 +51,7 @@ vi.mock(import('node:os'), async (importOriginal) => {
   const original = await importOriginal()
   return {
     ...original,
-    default: { ...original.default, cpus: () => Array(cpuCount) },
+    availableParallelism: () => cpuCount,
   }
 })
 
