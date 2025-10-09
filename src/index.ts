@@ -205,6 +205,18 @@ const kDefaultRunOptions: FilledRunOptions = {
   name: null,
 }
 
+/**
+ * Options for destroying the worker pool
+ */
+interface DestroyOptions {
+  /**
+   * Maximum time in milliseconds to wait for workers to terminate.
+   * If workers don't exit within this time, the destroy() method will reject.
+   * If not specified, destroy() will wait indefinitely.
+   */
+  timeout?: number
+}
+
 class DirectlyTransferable implements Transferable {
   #value: object
   constructor(value: object) {
@@ -1076,7 +1088,8 @@ class ThreadPool {
     }
   }
 
-  async destroy() {
+  async destroy(options?: DestroyOptions): Promise<void> {
+    // Clear all pending tasks
     while (this.skipQueue.length > 0) {
       const taskInfo: TaskInfo = this.skipQueue.shift() as TaskInfo
       taskInfo.done(new Error('Terminating worker thread'))
@@ -1086,6 +1099,7 @@ class ThreadPool {
       taskInfo.done(new Error('Terminating worker thread'))
     }
 
+    // Collect exit events from all workers
     const exitEvents: Promise<any[]>[] = []
     while (this.workers.size > 0) {
       const [workerInfo] = this.workers
@@ -1095,7 +1109,27 @@ class ThreadPool {
       void this._removeWorker(workerInfo)
     }
 
-    await Promise.all(exitEvents)
+    // Wait for all workers to exit, with optional timeout
+    const timeout = options?.timeout
+    if (timeout !== undefined) {
+      let timeoutHandle: NodeJS.Timeout | undefined
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error('Failed to terminate worker pool')),
+          timeout
+        )
+      })
+
+      try {
+        await Promise.race([Promise.all(exitEvents), timeoutPromise])
+      } finally {
+        if (timeoutHandle !== undefined) {
+          clearTimeout(timeoutHandle)
+        }
+      }
+    } else {
+      await Promise.all(exitEvents)
+    }
   }
 
   async recycleWorkers(options: Pick<Options, 'runtime'> = {}) {
@@ -1189,8 +1223,8 @@ class Tinypool extends EventEmitterAsyncResource {
     })
   }
 
-  async destroy() {
-    await this.#pool.destroy()
+  async destroy(options?: DestroyOptions): Promise<void> {
+    await this.#pool.destroy(options)
     this.emitDestroy()
   }
 
@@ -1280,5 +1314,5 @@ class Tinypool extends EventEmitterAsyncResource {
 const _workerId = process.__tinypool_state__?.workerId
 
 export * from './common'
-export { Tinypool, Options, _workerId as workerId }
+export { Tinypool, Options, DestroyOptions, _workerId as workerId }
 export default Tinypool
