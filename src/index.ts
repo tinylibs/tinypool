@@ -3,6 +3,7 @@ import {
   type MessagePort,
   receiveMessageOnPort,
 } from 'node:worker_threads'
+import type { SerializationType } from 'node:child_process'
 import { once, EventEmitterAsyncResource } from 'node:events'
 import { AsyncResource } from 'node:async_hooks'
 import { fileURLToPath, URL } from 'node:url'
@@ -153,6 +154,7 @@ interface Options {
   trackUnmanagedFds?: boolean
   isolateWorkers?: boolean
   teardown?: string
+  serialization?: SerializationType
 }
 
 interface FilledOptions extends Options {
@@ -735,6 +737,7 @@ class ThreadPool {
         this.options.workerData,
       ] as TinypoolData,
       trackUnmanagedFds: this.options.trackUnmanagedFds,
+      serialization: this.options.serialization,
     })
 
     const onMessage = (message: ResponseMessage) => {

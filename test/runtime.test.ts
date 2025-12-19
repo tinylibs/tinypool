@@ -1,7 +1,7 @@
+import EventEmitter from 'node:events'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Tinypool } from 'tinypool'
-import EventEmitter from 'node:events'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -195,6 +195,67 @@ describe('child_process', () => {
 
     expect(result).toMatchObject({
       received: 'Hello from main',
+      response: 'Hello from worker',
+    })
+  })
+
+  test('can send complex messages to port', async () => {
+    const pool = createPool({
+      runtime: 'child_process',
+      filename: path.resolve(
+        __dirname,
+        'fixtures/child_process-communication.mjs'
+      ),
+      serialization: 'advanced',
+    })
+
+    const complexData = {
+      bigint: 123456789123456789n,
+      map: new Map([['hello', 'world']]),
+      set: new Set(['hello', 'world']),
+      error: new Error('message'),
+      regexp: /regexp/,
+    }
+
+    const emitter = new EventEmitter()
+
+    const startup = new Promise<void>((resolve) =>
+      emitter.on(
+        'response',
+        (message) => message === 'Child process started' && resolve()
+      )
+    )
+
+    const runPromise = pool.run(complexData, {
+      channel: {
+        onMessage: (callback) => emitter.on('message', callback),
+        postMessage: (message) => emitter.emit('response', message),
+      },
+    })
+
+    // Wait for the child process to start
+    await startup
+
+    const response = new Promise<any>((resolve) =>
+      emitter.on('response', (message) => resolve(message))
+    )
+
+    // Send message to child process
+    emitter.emit('message', complexData)
+
+    // Wait for task to finish
+    const runResult = await runPromise
+
+    expect(runResult).toMatchObject({
+      received: complexData,
+      response: 'Hello from worker',
+    })
+
+    // Wait for response from child
+    const channelResult = await response
+
+    expect(channelResult).toMatchObject({
+      received: complexData,
       response: 'Hello from worker',
     })
   })

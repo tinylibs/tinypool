@@ -1,4 +1,4 @@
-export default async function run() {
+export default async function run(task) {
   let resolve = () => {}
   const promise = new Promise((r) => (resolve = r))
 
@@ -6,8 +6,8 @@ export default async function run() {
 
   process.on('message', (message) => {
     process.send({ received: message, response: 'Hello from worker' })
-    resolve()
+    resolve({ received: task, response: 'Hello from worker' })
   })
 
-  await promise
+  return promise
 }
