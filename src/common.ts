@@ -1,4 +1,5 @@
 import type { MessagePort, TransferListItem } from 'node:worker_threads'
+import type { SerializationType } from 'node:child_process'
 
 /** Channel for communicating between main thread and workers */
 export interface TinypoolChannel {
@@ -21,6 +22,7 @@ export interface TinypoolWorker {
     resourceLimits?: any
     workerData: TinypoolData
     trackUnmanagedFds?: boolean
+    serialization?: SerializationType
   }): void
   terminate(): Promise<any>
   postMessage(message: any, transferListItem?: TransferListItem[]): void
