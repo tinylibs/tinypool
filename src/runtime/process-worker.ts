@@ -83,7 +83,7 @@ export default class ProcessWorker implements TinypoolWorker {
   }
 
   private send(message: Parameters<NonNullable<(typeof process)['send']>>[0]) {
-    if (!this.isTerminating) {
+    if (!this.isTerminating && this.process.connected) {
       this.process.send(message)
     }
   }
@@ -116,8 +116,16 @@ export default class ProcessWorker implements TinypoolWorker {
 
   on(event: string, callback: (...args: any[]) => void) {
     return this.process.on(event, (data: TinypoolWorkerMessage) => {
-      // All errors should be forwarded to the pool
+      // All errors should be forwarded to the pool, except IPC channel closure
+      // errors that occur during graceful termination (observed on Node.js 24+
+      // when forceExit causes the IPC channel to close before send() drains).
       if (event === 'error') {
+        if (
+          this.isTerminating &&
+          (data as any)?.code === 'ERR_IPC_CHANNEL_CLOSED'
+        ) {
+          return
+        }
         return callback(data)
       }
 
