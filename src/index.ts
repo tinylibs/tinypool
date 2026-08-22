@@ -256,6 +256,12 @@ function maybeFileURLToPath(filename: string): string {
     : filename
 }
 
+// Copy own properties onto a prototype-less object, so that options are never
+// resolved through a polluted prototype chain.
+function withNullPrototype<T extends object>(source: T): T {
+  return Object.assign(Object.create(null), source)
+}
+
 // Extend AsyncResource so that async relations between posting a task and
 // receiving its result are visible to diagnostic tools.
 class TaskInfo extends AsyncResource implements Task {
@@ -656,12 +662,12 @@ class ThreadPool {
       ? maybeFileURLToPath(options.filename)
       : null
 
-    this.options = Object.assign(
-      Object.create(null),
-      kDefaultOptions,
-      options,
-      { filename, maxQueue: 0 }
-    )
+    this.options = withNullPrototype({
+      ...kDefaultOptions,
+      ...options,
+      filename,
+      maxQueue: 0,
+    })
 
     // The >= and <= could be > and < but this way we get 100 % coverage 🙃
     if (
@@ -1108,7 +1114,8 @@ class ThreadPool {
     await Promise.all(exitEvents)
   }
 
-  async recycleWorkers(options: Pick<Options, 'runtime'> = {}) {
+  async recycleWorkers(_options: Pick<Options, 'runtime'> = {}) {
+    const options = withNullPrototype(_options)
     const runtimeChanged =
       options?.runtime && options.runtime !== this.options.runtime
 
@@ -1148,7 +1155,9 @@ class ThreadPool {
 class Tinypool extends EventEmitterAsyncResource {
   #pool: ThreadPool
 
-  constructor(options: Options = {}) {
+  constructor(_options: Options = {}) {
+    const options = withNullPrototype(_options)
+
     // convert fractional option values to int
     if (
       options.minThreads !== undefined &&
@@ -1187,7 +1196,8 @@ class Tinypool extends EventEmitterAsyncResource {
   }
 
   run(task: any, options: RunOptions = kDefaultRunOptions) {
-    const { transferList, filename, name, signal, runtime, channel } = options
+    const { transferList, filename, name, signal, runtime, channel } =
+      withNullPrototype(options)
 
     return this.#pool.runTask(task, {
       transferList,
