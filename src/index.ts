@@ -655,7 +655,14 @@ class ThreadPool {
     const filename = options.filename
       ? maybeFileURLToPath(options.filename)
       : null
-    this.options = { ...kDefaultOptions, ...options, filename, maxQueue: 0 }
+
+    this.options = Object.assign(
+      Object.create(null),
+      kDefaultOptions,
+      options,
+      { filename, maxQueue: 0 }
+    )
+
     // The >= and <= could be > and < but this way we get 100 % coverage 🙃
     if (
       options.maxThreads !== undefined &&

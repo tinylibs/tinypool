@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import { expect, test, vi } from 'vitest'
 
 let Tinypool: typeof import('tinypool').default
@@ -45,6 +46,31 @@ test('fractional thread limits in the wrong order throw an error', async () => {
       maxThreads: 1,
     })
   }).toThrow()
+})
+
+test('ignores worker options from prototype', async () => {
+  {
+    const failsWhenLoaded = resolve(__dirname, 'fixtures/fails-when-loaded.mjs')
+
+    onTestFinished(() => {
+      // @ts-expect-error -- intentional
+      delete Object.prototype.execArgv
+      // @ts-expect-error -- intentional
+      delete Object.prototype.env
+    })
+
+    // @ts-expect-error -- intentional
+    Object.prototype.execArgv = ['--import', failsWhenLoaded]
+
+    // @ts-expect-error -- intentional
+    Object.prototype.env = { NODE_OPTIONS: `--import ${failsWhenLoaded}` }
+  }
+
+  const worker = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/eval.js'),
+  })
+  const result = await worker.run('42')
+  expect(result).toBe(42)
 })
 
 vi.mock(import('node:os'), async (importOriginal) => {
