@@ -28,6 +28,7 @@ import {
   isTransferable,
   markMovable,
   isMovable,
+  withNullPrototype,
   kTransferable,
   kValue,
   type TinypoolData,
@@ -254,12 +255,6 @@ function maybeFileURLToPath(filename: string): string {
   return filename.startsWith('file:')
     ? fileURLToPath(new URL(filename))
     : filename
-}
-
-// Copy own properties onto a prototype-less object, so that options are never
-// resolved through a polluted prototype chain.
-function withNullPrototype<T extends object>(source: T): T {
-  return Object.assign(Object.create(null), source)
 }
 
 // Extend AsyncResource so that async relations between posting a task and

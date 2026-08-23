@@ -111,6 +111,12 @@ export function markMovable(value: object): void {
   })
 }
 
+// Copy own properties onto a prototype-less object, so that options are never
+// resolved through a polluted prototype chain.
+export function withNullPrototype<T extends object>(source: T): T {
+  return Object.assign(Object.create(null), source)
+}
+
 export interface Transferable {
   readonly [kTransferable]: object
   readonly [kValue]: object
