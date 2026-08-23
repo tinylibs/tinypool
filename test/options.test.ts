@@ -73,6 +73,28 @@ test('ignores worker options from prototype', async () => {
   expect(result).toBe(42)
 })
 
+test('ignores worker filename from prototype', async () => {
+  {
+    const failsWhenLoaded = resolve(__dirname, 'fixtures/fails-when-loaded.mjs')
+
+    onTestFinished(() => {
+      // @ts-expect-error -- intentional
+      delete Object.prototype.filename
+    })
+
+    // @ts-expect-error -- intentional
+    Object.prototype.filename = failsWhenLoaded
+  }
+
+  const worker = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/eval.js'),
+  })
+  const result = await worker.run('42', {
+    signal: new AbortController().signal,
+  })
+  expect(result).toBe(42)
+})
+
 vi.mock(import('node:os'), async (importOriginal) => {
   const original = await importOriginal()
   return {
