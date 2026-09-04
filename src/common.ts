@@ -16,7 +16,7 @@ export interface TinypoolChannel {
 export interface TinypoolWorker {
   runtime: string
   initialize(options: {
-    env?: Record<string, string>
+    env?: NodeJS.ProcessEnv
     argv?: string[]
     execArgv?: string[]
     resourceLimits?: any

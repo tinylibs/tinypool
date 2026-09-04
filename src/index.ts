@@ -149,7 +149,7 @@ interface Options {
   maxMemoryLimitBeforeRecycle?: number
   argv?: string[]
   execArgv?: string[]
-  env?: Record<string, string>
+  env?: NodeJS.ProcessEnv
   workerData?: any
   taskQueue?: TaskQueue
   trackUnmanagedFds?: boolean
