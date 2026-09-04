@@ -1,4 +1,8 @@
-import type { MessagePort, TransferListItem } from 'node:worker_threads'
+import type {
+  MessagePort,
+  TransferListItem,
+  SHARE_ENV,
+} from 'node:worker_threads'
 import type { SerializationType } from 'node:child_process'
 
 /** Channel for communicating between main thread and workers */
@@ -16,7 +20,9 @@ export interface TinypoolChannel {
 export interface TinypoolWorker {
   runtime: string
   initialize(options: {
-    env?: Record<string, string>
+    // Mirrors `WorkerOptions['env']`: `ThreadWorker` hands this straight to
+    // `new Worker`, so it must admit `process.env` and `SHARE_ENV`.
+    env?: NodeJS.Dict<string> | typeof SHARE_ENV
     argv?: string[]
     execArgv?: string[]
     resourceLimits?: any

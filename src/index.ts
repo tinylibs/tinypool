@@ -2,6 +2,7 @@ import {
   MessageChannel,
   type MessagePort,
   receiveMessageOnPort,
+  SHARE_ENV,
 } from 'node:worker_threads'
 import type { SerializationType } from 'node:child_process'
 import { once, EventEmitterAsyncResource } from 'node:events'
@@ -149,7 +150,16 @@ interface Options {
   maxMemoryLimitBeforeRecycle?: number
   argv?: string[]
   execArgv?: string[]
-  env?: Record<string, string>
+  /**
+   * Passed through to the worker. Mirrors `WorkerOptions['env']` from
+   * `node:worker_threads`, so `process.env` and `SHARE_ENV` are both accepted;
+   * the previous `Record<string, string>` rejected `process.env`, whose values
+   * are `string | undefined`.
+   *
+   * `SHARE_ENV` is only meaningful under `runtime: 'worker_threads'` — see
+   * `assertEnvRuntime`.
+   */
+  env?: NodeJS.Dict<string> | typeof SHARE_ENV
   workerData?: any
   taskQueue?: TaskQueue
   trackUnmanagedFds?: boolean
@@ -183,6 +193,30 @@ const kDefaultOptions: FilledOptions = {
   useAtomics: true,
   taskQueue: new ArrayTaskQueue(),
   trackUnmanagedFds: true,
+}
+
+/**
+ * `SHARE_ENV` asks the parent and the worker to share one `process.env`, which
+ * only `worker_threads` can do. `ProcessWorker` builds the child's environment
+ * with `{ ...options.env }`, and spreading a symbol yields `{}` — so a
+ * `child_process` pool given `SHARE_ENV` would silently start its children with
+ * no environment at all beyond `TINYPOOL_WORKER_ID`: no `PATH`, no `HOME`.
+ *
+ * Refusing it is the point of widening the type rather than only widening it:
+ * the value is now expressible, so the combination it cannot honour has to say
+ * so instead of quietly emptying the environment.
+ */
+function assertEnvRuntime(
+  env: Options['env'],
+  runtime: Options['runtime']
+): void {
+  if (env === SHARE_ENV && runtime === 'child_process') {
+    throw new TypeError(
+      "options.env cannot be SHARE_ENV when options.runtime is 'child_process' — " +
+        'sharing an environment requires worker_threads. Pass an explicit ' +
+        'object (for example { ...process.env }) instead.'
+    )
+  }
 }
 
 interface RunOptions {
@@ -1111,6 +1145,12 @@ class ThreadPool {
 
   async recycleWorkers(_options: Pick<Options, 'runtime'> = {}) {
     const options = withNullPrototype(_options)
+
+    // Checked here as well as in the constructor: this is the one path that can
+    // move a pool onto `child_process` after it was built, so a constructor-only
+    // guard would be bypassed by recycling into the runtime that cannot share.
+    assertEnvRuntime(this.options.env, options?.runtime)
+
     const runtimeChanged =
       options?.runtime && options.runtime !== this.options.runtime
 
@@ -1152,6 +1192,8 @@ class Tinypool extends EventEmitterAsyncResource {
 
   constructor(_options: Options = {}) {
     const options = withNullPrototype(_options)
+
+    assertEnvRuntime(options.env, options.runtime)
 
     // convert fractional option values to int
     if (

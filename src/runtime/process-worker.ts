@@ -21,6 +21,17 @@ export default class ProcessWorker implements TinypoolWorker {
   isTerminating = false
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
+    // `SHARE_ENV` is a symbol, and `{ ...symbol }` is `{}` — a child forked
+    // that way would start with no environment beyond the worker id. Tinypool
+    // refuses the combination up front (`assertEnvRuntime`), so reaching here
+    // with one is a bug rather than user input; it throws rather than falls
+    // back so it cannot become the silent empty environment again.
+    if (typeof options.env === 'symbol') {
+      throw new TypeError(
+        "ProcessWorker cannot share an environment: options.env must be an object for runtime 'child_process'"
+      )
+    }
+
     this.process = fork(
       fileURLToPath(import.meta.url + '/../entry/process.js'),
       options.argv,
