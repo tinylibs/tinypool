@@ -86,6 +86,16 @@ test('passing env to workers works', async () => {
   expect(env).toEqual({ A: 'foo' })
 })
 
+test('passing process.env to workers works', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/eval.js'),
+    env: process.env,
+  })
+
+  const env = await pool.run('({...process.env})')
+  expect(env).toEqual(process.env)
+})
+
 test('passing argv to workers works', async () => {
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/eval.js'),
