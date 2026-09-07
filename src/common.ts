@@ -35,6 +35,29 @@ export interface TinypoolWorker {
   threadId: number
 }
 
+type SliceFirst<T extends any[]> = //
+  T extends [] | [any?] | [any]
+    ? T
+    : T extends [any, any, ...any[]]
+      ? never
+      : Required<T> extends [infer A, ...any[]]
+        ? [A?]
+        : never
+
+export type TinypoolRunner<T> = {
+  [K in keyof T as T[K] extends (...args: any[]) => any
+    ? K
+    : never]: T[K] extends (...args: infer A) => infer R
+    ? [R] extends [Promise<any>]
+      ? true extends R & 'any'
+        ? (...args: SliceFirst<A>) => Promise<any>
+        : A['length'] extends 0 | 1
+          ? T[K]
+          : (...args: SliceFirst<A>) => Promise<R>
+      : (...args: SliceFirst<A>) => Promise<R>
+    : never
+}
+
 /**
  * Tinypool's internal messaging between main thread and workers.
  * - Utilizers can use `__tinypool_worker_message__` property to identify
