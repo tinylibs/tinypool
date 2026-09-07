@@ -7,7 +7,6 @@ import type { SerializationType } from 'node:child_process'
 import { once, EventEmitterAsyncResource } from 'node:events'
 import { AsyncResource } from 'node:async_hooks'
 import { fileURLToPath, URL } from 'node:url'
-import { join } from 'node:path'
 import { inspect, types } from 'node:util'
 import assert from 'node:assert'
 import { performance } from 'node:perf_hooks'
@@ -1253,7 +1252,7 @@ class Tinypool extends EventEmitterAsyncResource {
 
   static get version(): string {
     const { version } = JSON.parse(
-      readFileSync(join(__dirname, '../package.json'), 'utf-8')
+      readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
     ) as typeof import('../package.json')
     return version
   }
