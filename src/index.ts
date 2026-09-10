@@ -155,6 +155,18 @@ interface Options {
   isolateWorkers?: boolean
   teardown?: string
   serialization?: SerializationType
+  /**
+   * When `true`, the pool does not surface an `error` event for a worker
+   * that exits while it has no in-flight task. This is useful for pools
+   * that already track worker health via their own channel (e.g. cloud
+   * workerd subprocesses that may segfault during teardown — see
+   * https://github.com/cloudflare/workerd/issues/6763) and do not want
+   * a post-task uncaught exception to fail the whole pool run.
+   *
+   * Defaults to `false` to preserve the historic behavior of surfacing
+   * post-task uncaught exceptions via the pool's `error` event.
+   */
+  allowWorkerIdleExit?: boolean
 }
 
 interface FilledOptions extends Options {
@@ -168,6 +180,7 @@ interface FilledOptions extends Options {
   concurrentTasksPerWorker: number
   useAtomics: boolean
   taskQueue: TaskQueue
+  allowWorkerIdleExit: boolean
 }
 
 const kDefaultOptions: FilledOptions = {
@@ -182,6 +195,7 @@ const kDefaultOptions: FilledOptions = {
   useAtomics: true,
   taskQueue: new ArrayTaskQueue(),
   trackUnmanagedFds: true,
+  allowWorkerIdleExit: false,
 }
 
 interface RunOptions {
@@ -844,7 +858,14 @@ class ThreadPool {
         for (const taskInfo of taskInfos) {
           taskInfo.done(err, null)
         }
-      } else {
+      } else if (!this.options.allowWorkerIdleExit) {
+        // Worker exited while idle (no in-flight task). By default this is
+        // surfaced as a pool-level `error` event so post-task uncaught
+        // exceptions aren't silently swallowed. Pools that track worker
+        // health via their own channel (e.g. cloudflare/vitest-pool-workers
+        // running workerd, which can segfault on shutdown — see
+        // https://github.com/cloudflare/workerd/issues/6763) can opt out
+        // via `allowWorkerIdleExit: true`.
         this.publicInterface.emit('error', err)
       }
     })
