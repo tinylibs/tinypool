@@ -143,6 +143,65 @@ test('filename can be a file:// URL to an ESM module', async () => {
   expect(result).toBe(42)
 })
 
+test('filename can be a URL instance', async () => {
+  const worker = new Tinypool({
+    filename: pathToFileURL(resolve(__dirname, 'fixtures/eval.js')),
+  })
+  const result = await worker.run('42')
+  expect(result).toBe(42)
+})
+
+test('filename can be a URL instance to an ESM module', async () => {
+  const worker = new Tinypool({
+    filename: pathToFileURL(resolve(__dirname, 'fixtures/esm-export.mjs')),
+  })
+  const result = await worker.run('42')
+  expect(result).toBe(42)
+})
+
+test('run() accepts a URL instance as filename', async () => {
+  const worker = new Tinypool()
+  const result = await worker.run('42', {
+    filename: pathToFileURL(resolve(__dirname, 'fixtures/eval.js')),
+  })
+  expect(result).toBe(42)
+})
+
+test('a URL instance overrides the pool filename per task', async () => {
+  const worker = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/eval.js'),
+  })
+  const result = await worker.run('42', {
+    filename: pathToFileURL(resolve(__dirname, 'fixtures/esm-export.mjs')),
+  })
+  expect(result).toBe(42)
+})
+
+test('filename can be a URL instance with runtime child_process', async () => {
+  const worker = new Tinypool({
+    filename: pathToFileURL(resolve(__dirname, 'fixtures/eval.js')),
+    runtime: 'child_process',
+  })
+  const result = await worker.run('42')
+  expect(result).toBe(42)
+})
+
+test('a non-file: URL instance is passed through to the worker', async () => {
+  const worker = new Tinypool({
+    filename: new URL('data:text/javascript,export default () => 42'),
+  })
+  const result = await worker.run(null)
+  expect(result).toBe(42)
+})
+
+test('run() rejects a filename that is neither string nor URL', async () => {
+  const worker = new Tinypool()
+  await expect(
+    // @ts-expect-error -- deliberately wrong type
+    worker.run('42', { filename: 42 })
+  ).rejects.toThrow('filename must be provided to run() or in options object')
+})
+
 test('named tasks work', async () => {
   const worker = new Tinypool({
     filename: resolve(__dirname, 'fixtures/multiple.js'),
