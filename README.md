@@ -27,7 +27,7 @@ _In case you need more tiny libraries like tinypool or tinyspy, please consider 
 import Tinypool from 'tinypool'
 
 const pool = new Tinypool({
-  filename: new URL('./worker.mjs', import.meta.url).href,
+  filename: new URL('./worker.mjs', import.meta.url),
 })
 const result = await pool.run({ a: 4, b: 6 })
 console.log(result) // Prints 10
@@ -55,7 +55,7 @@ import Tinypool from 'tinypool'
 import { MessageChannel } from 'node:worker_threads'
 
 const pool = new Tinypool({
-  filename: new URL('./worker.mjs', import.meta.url).href,
+  filename: new URL('./worker.mjs', import.meta.url),
 })
 const { port1, port2 } = new MessageChannel()
 const promise = pool.run({ port: port1 }, { transferList: [port1] })
@@ -98,7 +98,7 @@ import Tinypool from 'tinypool'
 
 const pool = new Tinypool({
   runtime: 'child_process',
-  filename: new URL('./worker.mjs', import.meta.url).href,
+  filename: new URL('./worker.mjs', import.meta.url),
 })
 const result = await pool.run({ a: 4, b: 6 })
 console.log(result) // Prints 10
@@ -124,7 +124,7 @@ import Tinypool from 'tinypool'
 
 const pool = new Tinypool({
   runtime: 'child_process',
-  filename: new URL('./worker.mjs', import.meta.url).href,
+  filename: new URL('./worker.mjs', import.meta.url),
 })
 
 const messages = []

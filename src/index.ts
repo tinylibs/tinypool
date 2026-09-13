@@ -134,7 +134,7 @@ class ArrayTaskQueue implements TaskQueue {
 }
 
 interface Options {
-  filename?: string | null
+  filename?: string | URL | null
   runtime?: 'worker_threads' | 'child_process'
   name?: string
   minThreads?: number
@@ -187,7 +187,7 @@ const kDefaultOptions: FilledOptions = {
 interface RunOptions {
   transferList?: TransferList
   channel?: TinypoolChannel
-  filename?: string | null
+  filename?: string | URL | null
   signal?: AbortSignalAny | null
   name?: string | null
   runtime?: Options['runtime']
@@ -195,7 +195,7 @@ interface RunOptions {
 
 interface FilledRunOptions extends RunOptions {
   transferList: TransferList | never
-  filename: string | null
+  filename: string | URL | null
   signal: AbortSignalAny | null
   name: string | null
 }
@@ -250,7 +250,14 @@ type TransferList = MessagePort extends {
   : never
 type TransferListItem = TransferList extends (infer T)[] ? T : never
 
-function maybeFileURLToPath(filename: string): string {
+function maybeFileURLToPath(filename: string | URL): string {
+  // A URL instance is normalised the same way the equivalent string is: a file: URL
+  // becomes a path, and any other scheme is passed through for the worker to import().
+  if (typeof filename !== 'string') {
+    return filename.protocol === 'file:'
+      ? fileURLToPath(filename)
+      : filename.href
+  }
   return filename.startsWith('file:')
     ? fileURLToPath(new URL(filename))
     : filename
@@ -929,7 +936,7 @@ class ThreadPool {
     if (name == null) {
       name = this.options.name
     }
-    if (typeof filename !== 'string') {
+    if (typeof filename !== 'string' && !(filename instanceof URL)) {
       return Promise.reject(Errors.FilenameNotProvided())
     }
     filename = maybeFileURLToPath(filename)
