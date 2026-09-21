@@ -49,6 +49,32 @@ test('will put items into a task queue until they can run', async () => {
   await Promise.all(results)
 })
 
+test('continues draining after a queued task cannot be cloned', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/wait-for-notify.js'),
+    minThreads: 1,
+    maxThreads: 1,
+  })
+  const firstBuffer = new Int32Array(new SharedArrayBuffer(4))
+  const lastBuffer = new Int32Array(new SharedArrayBuffer(4))
+
+  const firstTask = pool.run(firstBuffer)
+  const uncloneableTask = pool.run({ uncloneable: () => {} })
+  const lastTask = pool.run(lastBuffer)
+
+  for (const buffer of [firstBuffer, lastBuffer]) {
+    Atomics.store(buffer, 0, 1)
+    Atomics.notify(buffer, 0, 1)
+  }
+
+  await expect(firstTask).resolves.toBeUndefined()
+  await expect(uncloneableTask).rejects.toMatchObject({
+    name: 'DataCloneError',
+  })
+  await expect(lastTask).resolves.toBeUndefined()
+  expect(pool.queueSize).toBe(0)
+})
+
 test('will reject items over task queue limit', async () => {
   const pool = new Tinypool({
     filename: resolve(__dirname, 'fixtures/eval.js'),
