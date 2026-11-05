@@ -576,7 +576,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     }
   }
 
-  postTask(taskInfo: TaskInfo) {
+  postTask(taskInfo: TaskInfo): boolean {
     assert(!this.taskInfos.has(taskInfo.taskId))
     const message: RequestMessage = {
       task: taskInfo.releaseTask(),
@@ -594,7 +594,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
       // This would mostly happen if e.g. message contains unserializable data
       // or transferList is invalid.
       taskInfo.done(err)
-      return
+      return false
     }
 
     taskInfo.workerInfo = this
@@ -606,6 +606,7 @@ class WorkerInfo extends AsynchronouslyCreatedResource {
     // if it is waiting for one.
     Atomics.add(this.sharedBuffer, kRequestCountField, 1)
     Atomics.notify(this.sharedBuffer, kRequestCountField, 1)
+    return true
   }
 
   processPendingMessages() {
@@ -908,9 +909,10 @@ class ThreadPool {
       }
       const now = performance.now()
       taskInfo.started = now
-      workerInfo.postTask(taskInfo)
+      const submitted = workerInfo.postTask(taskInfo)
       this._maybeDrain()
-      return
+      if (submitted) return
+      // Failed submissions leave the worker available for the next queued task.
     }
 
     if (
