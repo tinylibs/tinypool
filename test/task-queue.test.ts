@@ -1,8 +1,38 @@
 import { dirname, resolve } from 'node:path'
 import { Tinypool, type Task, type TaskQueue } from 'tinypool'
 import { fileURLToPath } from 'node:url'
+import { onTestFinished } from 'vitest'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+test('continues the queue after submission failures', async () => {
+  const pool = new Tinypool({
+    filename: resolve(__dirname, 'fixtures/wait-for-notify.js'),
+    minThreads: 1,
+    maxThreads: 1,
+  })
+  onTestFinished(() => pool.destroy())
+
+  const buffer = new Int32Array(new SharedArrayBuffer(4))
+  const results = [
+    pool.run(buffer),
+    pool.run(() => {}).catch((error) => error.name),
+    pool.run(() => {}).catch((error) => error.name),
+    pool.run(buffer),
+  ]
+  expect(pool.queueSize).toBe(3)
+
+  Atomics.store(buffer, 0, 1)
+  Atomics.notify(buffer, 0)
+
+  expect(await Promise.all(results)).toEqual([
+    undefined,
+    'DataCloneError',
+    'DataCloneError',
+    undefined,
+  ])
+  expect(pool.queueSize).toBe(0)
+})
 
 test('will put items into a task queue until they can run', async () => {
   const pool = new Tinypool({
