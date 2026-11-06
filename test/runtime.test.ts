@@ -1,4 +1,6 @@
+import childProcess from 'node:child_process'
 import EventEmitter from 'node:events'
+import { syncBuiltinESMExports } from 'node:module'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Tinypool } from 'tinypool'
@@ -95,6 +97,73 @@ describe('worker_threads', () => {
 })
 
 describe('child_process', () => {
+  test('requests hidden consoles without changing pipes or environment', () => {
+    const intercepted = new Error('Intercepted worker fork')
+    const fork = vi.spyOn(childProcess, 'fork').mockImplementation(() => {
+      throw intercepted
+    })
+
+    try {
+      syncBuiltinESMExports()
+
+      expect(() =>
+        createPool({
+          runtime: 'child_process',
+          argv: ['fixture-argument'],
+          env: { TINYPOOL_TEST_ENV: 'preserved' },
+        })
+      ).toThrow(intercepted)
+
+      expect(fork).toHaveBeenCalledTimes(1)
+      expect(fork).toHaveBeenCalledWith(
+        expect.any(String),
+        ['fixture-argument'],
+        expect.objectContaining({
+          windowsHide: true,
+          stdio: 'pipe',
+          env: {
+            TINYPOOL_TEST_ENV: 'preserved',
+            TINYPOOL_WORKER_ID: '1',
+          },
+        })
+      )
+    } finally {
+      fork.mockRestore()
+      syncBuiltinESMExports()
+    }
+  })
+
+  test('hidden workers return results and exit when destroyed', async () => {
+    const pool = createPool({
+      runtime: 'child_process',
+      env: { TINYPOOL_TEST_ENV: 'preserved' },
+    })
+    const worker = pool.threads[0]!
+    let exited = false
+
+    worker.once('exit', () => {
+      exited = true
+    })
+
+    try {
+      await expect(
+        pool.run(`({
+          value: 21 * 2,
+          environment: process.env.TINYPOOL_TEST_ENV,
+          ipc: typeof process.send,
+        })`)
+      ).resolves.toEqual({
+        value: 42,
+        environment: 'preserved',
+        ipc: 'function',
+      })
+    } finally {
+      await pool.destroy()
+    }
+
+    expect(exited).toBe(true)
+    expect(pool.threads).toHaveLength(0)
+  })
   test('runs code in child_process', async () => {
     const pool = createPool({ runtime: 'child_process' })
 

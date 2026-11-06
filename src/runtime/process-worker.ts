@@ -1,4 +1,4 @@
-import { type ChildProcess, fork } from 'node:child_process'
+import { type ChildProcess, type SpawnOptions, fork } from 'node:child_process'
 import { MessagePort, type TransferListItem } from 'node:worker_threads'
 import { fileURLToPath } from 'node:url'
 import {
@@ -21,17 +21,20 @@ export default class ProcessWorker implements TinypoolWorker {
   isTerminating = false
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
+    const forkOptions = {
+      ...options,
+      windowsHide: true,
+      stdio: 'pipe',
+      env: {
+        ...options.env,
+        TINYPOOL_WORKER_ID: options.workerData[0].workerId.toString(),
+      },
+    } satisfies SpawnOptions
+
     this.process = fork(
       fileURLToPath(import.meta.url + '/../entry/process.js'),
       options.argv,
-      {
-        ...options,
-        stdio: 'pipe',
-        env: {
-          ...options.env,
-          TINYPOOL_WORKER_ID: options.workerData[0].workerId.toString(),
-        },
-      }
+      forkOptions
     )
 
     process.stdout.setMaxListeners(1 + process.stdout.getMaxListeners())
