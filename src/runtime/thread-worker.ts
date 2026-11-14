@@ -8,6 +8,8 @@ export default class ThreadWorker implements TinypoolWorker {
   thread!: Worker
   threadId!: number
   channel?: TinypoolChannel
+  isTerminating = false
+  hasErrored = false
 
   initialize(options: Parameters<TinypoolWorker['initialize']>[0]) {
     this.thread = new Worker(
@@ -15,9 +17,27 @@ export default class ThreadWorker implements TinypoolWorker {
       options
     )
     this.threadId = this.thread.threadId
+
+    this.thread.on('error', this.onError)
+    this.thread.on('exit', this.onExit)
+  }
+
+  onError = () => {
+    this.hasErrored = true
+  }
+
+  // A worker that throws emits 'error' first and 'exit' afterwards, so 'exit'
+  // is only unexpected when no error was reported before it.
+  onExit = () => {
+    if (!this.isTerminating && !this.hasErrored) {
+      this.thread.emit('error', new Error('Worker exited unexpectedly'))
+    }
   }
 
   async terminate() {
+    this.isTerminating = true
+    this.thread.off('exit', this.onExit)
+
     const output = await this.thread.terminate()
 
     this.channel?.onClose?.()
