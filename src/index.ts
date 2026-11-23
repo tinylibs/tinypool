@@ -991,8 +991,13 @@ class ThreadPool {
           void this._removeWorker(taskInfo.workerInfo)
           this._ensureMinimumWorkers()
         } else {
-          // Not yet running: Remove it from the queue.
-          this.taskQueue.remove(taskInfo)
+          // Not yet running: Remove it from the queue it is waiting in.
+          const skipIndex = this.skipQueue.indexOf(taskInfo)
+          if (skipIndex !== -1) {
+            this.skipQueue.splice(skipIndex, 1)
+          } else {
+            this.taskQueue.remove(taskInfo)
+          }
         }
       }
       onabort(signal, taskInfo.abortListener)
