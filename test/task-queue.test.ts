@@ -1,8 +1,53 @@
 import { dirname, resolve } from 'node:path'
 import { Tinypool, type Task, type TaskQueue } from 'tinypool'
 import { fileURLToPath } from 'node:url'
+import { EventEmitter } from 'node:events'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+describe.each(['worker_threads', 'child_process'] as const)('%s', (runtime) => {
+  test.each(['queued', 'skipped'])(
+    'aborts a %s task without running it',
+    async (state) => {
+      const pool = new Tinypool({
+        runtime,
+        filename: resolve(__dirname, 'fixtures/eval.js'),
+        minThreads: 1,
+        maxThreads: 1,
+        concurrentTasksPerWorker: 2,
+      })
+      const firstTask = pool.run(
+        'new Promise(resolve => { globalThis.finishTask = resolve })'
+      )
+      const secondTask = pool.run('42')
+      const runningTasks = Promise.allSettled([firstTask, secondTask])
+      const signal = new EventEmitter()
+      const abortedTask = pool
+        .run('globalThis.abortedTaskRan = true', { signal })
+        .catch((error) => error)
+
+      try {
+        if (state === 'skipped') {
+          // Finishing one task moves the abortable task into skipQueue while
+          // the other task is still occupying the worker.
+          await secondTask
+        }
+
+        expect(() => signal.emit('abort')).not.toThrow()
+        expect(await abortedTask).toMatchObject({ name: 'AbortError' })
+        expect(pool.queueSize).toBe(0)
+
+        await secondTask
+        await pool.run('globalThis.finishTask("finished")')
+        expect(await firstTask).toBe('finished')
+        expect(await pool.run('Boolean(globalThis.abortedTaskRan)')).toBe(false)
+      } finally {
+        await pool.destroy()
+        await runningTasks
+      }
+    }
+  )
+})
 
 test('will put items into a task queue until they can run', async () => {
   const pool = new Tinypool({
